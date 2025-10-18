@@ -19,8 +19,6 @@ const SYMBOLS = [
   { symbol: 'XAU/USD', twelveDataSymbol: 'XAU/USD', display: 'XAU/USD' },
   { symbol: 'EUR/USD', twelveDataSymbol: 'EUR/USD', display: 'EUR/USD' },
   { symbol: 'GBP/USD', twelveDataSymbol: 'GBP/USD', display: 'GBP/USD' },
-  { symbol: 'SPX', twelveDataSymbol: 'SPX', display: 'SPX' },
-  { symbol: 'CRUDE', twelveDataSymbol: 'WTI/USD', display: 'CRUDE/USD' },
 ]
 
 const CACHE_KEY = 'klaro_ticker_data'
@@ -167,7 +165,5 @@ function getFallbackData(): TickerItem[] {
     { symbol: 'XAU/USD', displaySymbol: 'XAU/USD', price: '$2,045.30', change: '+0.45%', isPositive: true },
     { symbol: 'EUR/USD', displaySymbol: 'EUR/USD', price: '$1.0842', change: '-0.12%', isPositive: false },
     { symbol: 'GBP/USD', displaySymbol: 'GBP/USD', price: '$1.2654', change: '+0.28%', isPositive: true },
-    { symbol: 'SPX', displaySymbol: 'SPX', price: '4,783.45', change: '+0.67%', isPositive: true },
-    { symbol: 'CRUDE', displaySymbol: 'CRUDE/USD', price: '$72.15', change: '-1.23%', isPositive: false },
   ]
 }

@@ -40,20 +40,22 @@ body {
 /* Ticker Animation */
 @keyframes ticker-scroll {
   0% {
-    transform: translateX(0);
+    transform: translateX(0%);
   }
   100% {
-    transform: translateX(-50%);
+    transform: translateX(-100%);
   }
 }
 
 .ticker-wrapper {
   width: 100%;
+  overflow: hidden;
 }
 
 .ticker-content {
-  display: inline-flex;
-  animation: ticker-scroll 30s linear infinite;
+  display: flex;
+  width: max-content;
+  animation: ticker-scroll 250s linear infinite;
 }
 
 .ticker-content:hover {
