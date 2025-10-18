@@ -2,8 +2,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { TrendingUp, BarChart3, Shield, Check } from 'lucide-react'
+import { useTickerData } from '@/hooks/useTickerData'
 
 function App() {
+  const { tickerData, isLoading, error } = useTickerData()
   return (
     <div className="min-h-screen bg-[oklch(10%_0.01_240)] text-[oklch(98%_0_0)]">
       {/* Navigation Bar */}
@@ -42,8 +44,47 @@ function App() {
         </div>
       </nav>
 
+      {/* Scrolling Ticker Banner */}
+      <div className="fixed top-[73px] left-0 right-0 z-40 w-full bg-[oklch(14%_0.01_240)] border-b border-[oklch(25%_0.01_240)] py-2 overflow-hidden">
+        <div className="ticker-wrapper">
+          {isLoading && tickerData.length === 0 ? (
+            <div className="flex items-center justify-center py-1">
+              <span className="text-sm text-[oklch(65%_0.01_240)]">Loading market data...</span>
+            </div>
+          ) : (
+            <div className="ticker-content flex items-center gap-8 whitespace-nowrap">
+              {/* First set of items */}
+              {tickerData.map((item) => (
+                <div key={`first-${item.symbol}`} className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-[oklch(65%_0.01_240)]">{item.displaySymbol}</span>
+                  <span className={`text-sm font-bold ${item.isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {item.price}
+                  </span>
+                  <span className={`text-xs ${item.isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {item.change}
+                  </span>
+                </div>
+              ))}
+
+              {/* Duplicate set for seamless loop */}
+              {tickerData.map((item) => (
+                <div key={`second-${item.symbol}`} className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-[oklch(65%_0.01_240)]">{item.displaySymbol}</span>
+                  <span className={`text-sm font-bold ${item.isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {item.price}
+                  </span>
+                  <span className={`text-xs ${item.isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {item.change}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Hero Section */}
-      <section className="min-h-screen flex items-center px-6">
+      <section className="min-h-screen flex items-center px-6 pt-[110px]">
         <div className="container mx-auto max-w-7xl">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             {/* Left - Text Content */}
