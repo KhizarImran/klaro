@@ -1,18 +1,283 @@
-import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
+import { TrendingUp, BarChart3, Shield, Check } from 'lucide-react'
 
 function App() {
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
-      <div className="container mx-auto p-8">
-        <h1 className={cn(
-          "text-4xl font-bold mb-4"
-        )} style={{ color: 'var(--color-foreground)' }}>
-          Welcome to Klaro
-        </h1>
-        <p style={{ color: 'var(--color-muted-foreground)' }}>
-          Your React + Vite + TypeScript + shadcn/ui project is ready!
-        </p>
-      </div>
+    <div className="min-h-screen bg-[oklch(10%_0.01_240)] text-[oklch(98%_0_0)]">
+      {/* Navigation Bar */}
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[oklch(25%_0.01_240)] bg-[oklch(10%_0.01_240)]/95 backdrop-blur-sm">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* Logo */}
+            <div className="flex items-center space-x-2">
+              <TrendingUp className="h-8 w-8 text-emerald-500" />
+              <span className="text-2xl font-bold">Klaro</span>
+            </div>
+
+            {/* Center Navigation */}
+            <div className="hidden md:flex items-center space-x-8">
+              <a href="#features" className="text-sm font-medium hover:text-emerald-500 transition-colors">
+                Features
+              </a>
+              <a href="#pricing" className="text-sm font-medium hover:text-emerald-500 transition-colors">
+                Pricing
+              </a>
+              <a href="#docs" className="text-sm font-medium hover:text-emerald-500 transition-colors">
+                Docs
+              </a>
+            </div>
+
+            {/* Right CTAs */}
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" className="text-sm">
+                Login
+              </Button>
+              <Button className="bg-emerald-500 hover:bg-emerald-600 text-white">
+                Sign Up
+              </Button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="min-h-screen flex items-center px-6">
+        <div className="container mx-auto max-w-7xl">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Left - Text Content */}
+            <div>
+              <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+                Advanced Analytics for
+                <br />
+                <span className="text-emerald-500">Algorithmic Traders</span>
+              </h1>
+              <p className="text-xl text-[oklch(65%_0.01_240)] max-w-xl">
+                Unlock powerful insights, track your strategies in real-time, and optimize your trading performance with Klaro's comprehensive analytics platform.
+              </p>
+            </div>
+
+            {/* Right - Visual Placeholder */}
+            <div className="hidden md:flex items-center justify-center">
+              <div className="w-full h-96 rounded-lg border-2 border-dashed border-[oklch(25%_0.01_240)] flex items-center justify-center">
+                <span className="text-[oklch(45%_0.01_240)] text-lg">Visual Placeholder</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <Separator className="my-12 bg-[oklch(25%_0.01_240)]" />
+
+      {/* Features Section */}
+      <section id="features" className="py-20 px-6">
+        <div className="container mx-auto max-w-6xl">
+          <h2 className="text-4xl font-bold text-center mb-16">
+            Built for <span className="text-emerald-500">Performance</span>
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Feature 1 */}
+            <div className="flex flex-col items-center text-center p-6 rounded-lg border border-[oklch(25%_0.01_240)] bg-[oklch(14%_0.01_240)] hover:border-emerald-500/50 transition-colors">
+              <div className="h-16 w-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
+                <TrendingUp className="h-8 w-8 text-emerald-500" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Real-Time Monitoring</h3>
+              <p className="text-[oklch(65%_0.01_240)]">
+                Track your strategies as they execute with live performance metrics and instant alerts.
+              </p>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="flex flex-col items-center text-center p-6 rounded-lg border border-[oklch(25%_0.01_240)] bg-[oklch(14%_0.01_240)] hover:border-emerald-500/50 transition-colors">
+              <div className="h-16 w-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
+                <BarChart3 className="h-8 w-8 text-emerald-500" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Advanced Analytics</h3>
+              <p className="text-[oklch(65%_0.01_240)]">
+                Dive deep into your data with comprehensive backtesting and performance analysis tools.
+              </p>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="flex flex-col items-center text-center p-6 rounded-lg border border-[oklch(25%_0.01_240)] bg-[oklch(14%_0.01_240)] hover:border-emerald-500/50 transition-colors">
+              <div className="h-16 w-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
+                <Shield className="h-8 w-8 text-emerald-500" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Risk Management</h3>
+              <p className="text-[oklch(65%_0.01_240)]">
+                Monitor exposure, manage portfolio risk, and stay protected with intelligent risk controls.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <Separator className="my-12 bg-[oklch(25%_0.01_240)]" />
+
+      {/* Pricing Section */}
+      <section id="pricing" className="py-20 px-6">
+        <div className="container mx-auto max-w-6xl">
+          <h2 className="text-4xl font-bold text-center mb-4">
+            Simple, Transparent <span className="text-emerald-500">Pricing</span>
+          </h2>
+          <p className="text-center text-[oklch(65%_0.01_240)] mb-16 text-lg">
+            Choose the plan that fits your trading needs
+          </p>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Starter Tier */}
+            <Card className="border-[oklch(25%_0.01_240)] bg-[oklch(14%_0.01_240)]">
+              <CardHeader>
+                <CardTitle className="text-2xl">Starter</CardTitle>
+                <CardDescription>Perfect for getting started</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-6">
+                  <span className="text-4xl font-bold">$29</span>
+                  <span className="text-[oklch(65%_0.01_240)]">/month</span>
+                </div>
+                <ul className="space-y-3">
+                  <li className="flex items-center">
+                    <Check className="h-5 w-5 text-emerald-500 mr-2" />
+                    <span>Up to 3 strategies</span>
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="h-5 w-5 text-emerald-500 mr-2" />
+                    <span>Basic analytics</span>
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="h-5 w-5 text-emerald-500 mr-2" />
+                    <span>Email support</span>
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="h-5 w-5 text-emerald-500 mr-2" />
+                    <span>30-day history</span>
+                  </li>
+                </ul>
+              </CardContent>
+              <CardFooter>
+                <Button variant="outline" className="w-full border-emerald-500 text-emerald-500 hover:bg-emerald-500/10">
+                  Get Started
+                </Button>
+              </CardFooter>
+            </Card>
+
+            {/* Pro Tier - Highlighted */}
+            <Card className="border-emerald-500 bg-[oklch(14%_0.01_240)] relative overflow-hidden">
+              <div className="absolute top-0 right-0 bg-emerald-500 text-white px-3 py-1 text-xs font-bold">
+                POPULAR
+              </div>
+              <CardHeader>
+                <CardTitle className="text-2xl text-emerald-500">Pro</CardTitle>
+                <CardDescription>For serious traders</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-6">
+                  <span className="text-4xl font-bold text-emerald-500">$99</span>
+                  <span className="text-[oklch(65%_0.01_240)]">/month</span>
+                </div>
+                <ul className="space-y-3">
+                  <li className="flex items-center">
+                    <Check className="h-5 w-5 text-emerald-500 mr-2" />
+                    <span>Unlimited strategies</span>
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="h-5 w-5 text-emerald-500 mr-2" />
+                    <span>Advanced analytics & AI</span>
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="h-5 w-5 text-emerald-500 mr-2" />
+                    <span>Priority support</span>
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="h-5 w-5 text-emerald-500 mr-2" />
+                    <span>Unlimited history</span>
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="h-5 w-5 text-emerald-500 mr-2" />
+                    <span>API access</span>
+                  </li>
+                </ul>
+              </CardContent>
+              <CardFooter>
+                <Button className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold">
+                  Subscribe Now
+                </Button>
+              </CardFooter>
+            </Card>
+
+            {/* Enterprise Tier */}
+            <Card className="border-[oklch(25%_0.01_240)] bg-[oklch(14%_0.01_240)]">
+              <CardHeader>
+                <CardTitle className="text-2xl">Enterprise</CardTitle>
+                <CardDescription>For trading firms</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-6">
+                  <span className="text-4xl font-bold">Custom</span>
+                </div>
+                <ul className="space-y-3">
+                  <li className="flex items-center">
+                    <Check className="h-5 w-5 text-emerald-500 mr-2" />
+                    <span>Everything in Pro</span>
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="h-5 w-5 text-emerald-500 mr-2" />
+                    <span>Dedicated support</span>
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="h-5 w-5 text-emerald-500 mr-2" />
+                    <span>Custom integrations</span>
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="h-5 w-5 text-emerald-500 mr-2" />
+                    <span>SLA guarantees</span>
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="h-5 w-5 text-emerald-500 mr-2" />
+                    <span>On-premise options</span>
+                  </li>
+                </ul>
+              </CardContent>
+              <CardFooter>
+                <Button variant="outline" className="w-full border-emerald-500 text-emerald-500 hover:bg-emerald-500/10">
+                  Contact Sales
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-[oklch(25%_0.01_240)] mt-20 py-12 px-6">
+        <div className="container mx-auto max-w-6xl">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="flex items-center space-x-2 mb-4 md:mb-0">
+              <TrendingUp className="h-6 w-6 text-emerald-500" />
+              <span className="text-xl font-bold">Klaro</span>
+            </div>
+            <div className="flex space-x-6 mb-4 md:mb-0">
+              <a href="#" className="text-sm text-[oklch(65%_0.01_240)] hover:text-emerald-500 transition-colors">
+                About
+              </a>
+              <a href="#" className="text-sm text-[oklch(65%_0.01_240)] hover:text-emerald-500 transition-colors">
+                Documentation
+              </a>
+              <a href="#" className="text-sm text-[oklch(65%_0.01_240)] hover:text-emerald-500 transition-colors">
+                Privacy
+              </a>
+              <a href="#" className="text-sm text-[oklch(65%_0.01_240)] hover:text-emerald-500 transition-colors">
+                Terms
+              </a>
+            </div>
+            <div className="text-sm text-[oklch(65%_0.01_240)]">
+              © 2025 Klaro. All rights reserved.
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
