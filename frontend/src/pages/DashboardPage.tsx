@@ -9,7 +9,7 @@ export function DashboardPage() {
 
   const handleSignOut = async () => {
     await signOut()
-    navigate('/login')
+    navigate('/')
   }
 
   return (
