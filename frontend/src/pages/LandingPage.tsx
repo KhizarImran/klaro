@@ -7,7 +7,7 @@ import { HeroChart } from '@/components/HeroChart'
 import { Link } from 'react-router-dom'
 
 export function LandingPage() {
-  const { tickerData, isLoading, error } = useTickerData()
+  const { tickerData, isLoading } = useTickerData()
   return (
     <div className="min-h-screen bg-[oklch(10%_0.01_240)] text-[oklch(98%_0_0)]">
       {/* Navigation Bar */}
