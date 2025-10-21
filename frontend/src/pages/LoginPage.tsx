@@ -59,7 +59,15 @@ export function LoginPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs text-emerald-500 hover:text-emerald-400"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
                 <Input
                   id="password"
                   type="password"
@@ -87,8 +95,8 @@ export function LoginPage() {
           <CardFooter className="flex flex-col space-y-2">
             <div className="text-sm text-[oklch(65%_0.01_240)] text-center">
               Don't have an account?{' '}
-              <Link to="/signup" className="text-emerald-500 hover:text-emerald-400">
-                Sign up
+              <Link to="/waitlist" className="text-emerald-500 hover:text-emerald-400">
+                Join the waitlist
               </Link>
             </div>
             <div className="text-sm text-center">

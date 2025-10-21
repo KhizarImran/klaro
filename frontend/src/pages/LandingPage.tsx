@@ -40,9 +40,9 @@ export function LandingPage() {
                   Login
                 </Button>
               </Link>
-              <Link to="/signup">
+              <Link to="/waitlist">
                 <Button className="bg-emerald-500 hover:bg-emerald-600 text-white">
-                  Sign Up
+                  Join Waitlist
                 </Button>
               </Link>
             </div>
@@ -206,9 +206,11 @@ export function LandingPage() {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg py-6">
-                  Subscribe Now
-                </Button>
+                <Link to="/waitlist" className="w-full">
+                  <Button className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg py-6">
+                    Join Waitlist
+                  </Button>
+                </Link>
               </CardFooter>
             </Card>
           </div>
