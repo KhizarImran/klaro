@@ -24,16 +24,12 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
+# dist/ commented out - needed for frontend builds
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
+# lib/ and lib64/ are for Python - use specific paths to avoid catching frontend/src/lib
+**/lib64/
 *.egg-info/
 .installed.cfg
 *.egg
