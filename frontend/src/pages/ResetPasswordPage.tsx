@@ -18,7 +18,7 @@ export function ResetPasswordPage() {
 
   useEffect(() => {
     // Check if user has a valid recovery session
-    supabase.auth.getSession().then((response) => {
+    supabase.auth.getSession().then((response): void => {
       if (response.data.session) {
         setValidSession(true)
       } else {
