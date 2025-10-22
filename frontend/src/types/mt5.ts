@@ -26,6 +26,7 @@ export interface MT5Trade {
   swap: number
   profit: number
   comment?: string
+  magicNumber?: number
 }
 
 export interface MT5PerformanceMetrics {

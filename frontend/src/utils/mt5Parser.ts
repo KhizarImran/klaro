@@ -122,9 +122,14 @@ function parseTrades(doc: Document): MT5Trade[] {
     const cells = row.querySelectorAll('td')
     if (cells.length >= 13) {
       try {
+        // Extract magic number from position field (format: "#123456" or just "123456")
+        const positionText = cells[1]?.textContent?.trim() || ''
+        const magicMatch = positionText.match(/\d+/)
+        const magicNumber = magicMatch ? parseInt(magicMatch[0]) : undefined
+
         const trade: MT5Trade = {
           openTime: parseDate(cells[0]?.textContent?.trim() || '') || new Date(),
-          position: cells[1]?.textContent?.trim() || '',
+          position: positionText,
           symbol: cells[2]?.textContent?.trim() || '',
           type: cells[3]?.textContent?.trim().toLowerCase() === 'buy' ? 'buy' : 'sell',
           volume: parseFloat(cells[4]?.textContent?.trim() || '0'),
@@ -136,6 +141,7 @@ function parseTrades(doc: Document): MT5Trade[] {
           commission: parseFloat(cells[10]?.textContent?.trim() || '0'),
           swap: parseFloat(cells[11]?.textContent?.trim() || '0'),
           profit: parseFloat(cells[12]?.textContent?.trim().replace(/\s/g, '') || '0'),
+          magicNumber,
         }
         trades.push(trade)
       } catch (error) {
