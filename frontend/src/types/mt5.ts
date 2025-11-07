@@ -27,6 +27,7 @@ export interface MT5Trade {
   profit: number
   comment?: string
   magicNumber?: number
+  strategy?: string // Strategy name from EA or comment field
 }
 
 export interface MT5PerformanceMetrics {

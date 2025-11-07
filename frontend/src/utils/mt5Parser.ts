@@ -100,38 +100,86 @@ function parseAccountInfo(doc: Document): MT5AccountInfo {
 function parseTrades(doc: Document): MT5Trade[] {
   const trades: MT5Trade[] = []
 
-  // Find the positions table
-  const tables = doc.querySelectorAll('table')
-  let positionsTable: Element | null = null
+  // Find all rows in the document
+  const allRows = Array.from(doc.querySelectorAll('tr'))
 
-  // Find table with "Positions" header
-  for (const table of tables) {
-    const header = table.querySelector('th[colspan="14"]')
-    if (header?.textContent?.includes('Positions')) {
-      positionsTable = table
+  // Find the start of the Positions section
+  let positionsStartIndex = -1
+  let positionsEndIndex = -1
+
+  for (let i = 0; i < allRows.length; i++) {
+    const row = allRows[i]
+    const headerCell = row.querySelector('th[colspan="14"]')
+
+    if (headerCell?.textContent?.includes('Positions')) {
+      positionsStartIndex = i
+    } else if (positionsStartIndex !== -1 && headerCell?.textContent?.includes('Orders')) {
+      positionsEndIndex = i
       break
     }
   }
 
-  if (!positionsTable) return trades
+  // If we didn't find an end, go to the end of the document
+  if (positionsStartIndex !== -1 && positionsEndIndex === -1) {
+    positionsEndIndex = allRows.length
+  }
 
-  // Find data rows (skip header rows)
-  const rows = positionsTable.querySelectorAll('tr[bgcolor="#FFFFFF"], tr[bgcolor="#F7F7F7"]')
+  if (positionsStartIndex === -1) return trades
 
-  rows.forEach(row => {
-    const cells = row.querySelectorAll('td')
+  // Parse only rows in the Positions section
+  for (let i = positionsStartIndex + 1; i < positionsEndIndex; i++) {
+    const row = allRows[i]
+    const bgcolor = row.getAttribute('bgcolor')
+
+    // Only process data rows (with white or gray background)
+    if (bgcolor !== '#FFFFFF' && bgcolor !== '#F7F7F7') {
+      continue
+    }
+
+    const allCells = row.querySelectorAll('td')
+
+    // Extract strategy name from hidden comment field before filtering
+    let strategyName = ''
+    for (const cell of allCells) {
+      const className = cell.getAttribute('class')
+      if (className?.includes('hidden')) {
+        strategyName = cell.textContent?.trim() || ''
+        break
+      }
+    }
+
+    // Filter out hidden cells (class="hidden")
+    const cells = Array.from(allCells).filter(cell => {
+      const className = cell.getAttribute('class')
+      return !className?.includes('hidden')
+    })
+
     if (cells.length >= 13) {
       try {
-        // Extract magic number from position field (format: "#123456" or just "123456")
+        // Check if this is a valid trade (not a deposit/withdrawal transaction)
+        const symbol = cells[2]?.textContent?.trim() || ''
+        const type = cells[3]?.textContent?.trim().toLowerCase() || ''
+
+        // Skip rows without a symbol or with non-trade types (charge, balance, etc.)
+        if (!symbol || (type !== 'buy' && type !== 'sell')) {
+          continue
+        }
+
+        // Extract position ID (not magic number - this is broker's trade ID)
         const positionText = cells[1]?.textContent?.trim() || ''
-        const magicMatch = positionText.match(/\d+/)
-        const magicNumber = magicMatch ? parseInt(magicMatch[0]) : undefined
+
+        // Try to extract magic number from strategy name if it's numeric, otherwise use undefined
+        let magicNumber: number | undefined = undefined
+        const numericMatch = strategyName.match(/^\d+$/)
+        if (numericMatch) {
+          magicNumber = parseInt(numericMatch[0])
+        }
 
         const trade: MT5Trade = {
           openTime: parseDate(cells[0]?.textContent?.trim() || '') || new Date(),
           position: positionText,
-          symbol: cells[2]?.textContent?.trim() || '',
-          type: cells[3]?.textContent?.trim().toLowerCase() === 'buy' ? 'buy' : 'sell',
+          symbol: symbol,
+          type: type as 'buy' | 'sell',
           volume: parseFloat(cells[4]?.textContent?.trim() || '0'),
           openPrice: parseFloat(cells[5]?.textContent?.trim() || '0'),
           stopLoss: parseFloat(cells[6]?.textContent?.trim() || '0'),
@@ -140,15 +188,17 @@ function parseTrades(doc: Document): MT5Trade[] {
           closePrice: parseFloat(cells[9]?.textContent?.trim() || '0'),
           commission: parseFloat(cells[10]?.textContent?.trim() || '0'),
           swap: parseFloat(cells[11]?.textContent?.trim() || '0'),
-          profit: parseFloat(cells[12]?.textContent?.trim().replace(/\s/g, '') || '0'),
+          profit: parseFloat(cells[12]?.textContent?.trim().replace(/\s+/g, '') || '0'),
           magicNumber,
+          // Store strategy name for grouping
+          strategy: strategyName || undefined,
         }
         trades.push(trade)
       } catch (error) {
         console.warn('Error parsing trade row:', error)
       }
     }
-  })
+  }
 
   return trades
 }
@@ -169,8 +219,8 @@ function parseMetrics(doc: Document): MT5PerformanceMetrics {
             const valueCell = cells[j]
             const boldValue = valueCell?.querySelector('b')?.textContent?.trim()
             if (boldValue) {
-              // Remove spaces and parse
-              const cleaned = boldValue.replace(/\s/g, '').replace(/[()%]/g, '')
+              // Remove ALL spaces (including thousands separators), parentheses, and percent signs
+              const cleaned = boldValue.replace(/\s+/g, '').replace(/[()%]/g, '')
               const num = parseFloat(cleaned)
               if (!isNaN(num)) return num
             }
@@ -192,7 +242,9 @@ function parseMetrics(doc: Document): MT5PerformanceMetrics {
             const valueCell = cells[j]
             const boldValue = valueCell?.querySelector('b')?.textContent?.trim()
             if (boldValue && boldValue.includes('%')) {
-              const match = boldValue.match(/([\d.]+)%/)
+              // Remove spaces before matching
+              const cleaned = boldValue.replace(/\s+/g, '')
+              const match = cleaned.match(/([\d.]+)%/)
               if (match) return parseFloat(match[1])
             }
           }
@@ -203,7 +255,32 @@ function parseMetrics(doc: Document): MT5PerformanceMetrics {
   }
 
   // Parse all metrics
-  metrics.initialDeposit = findValue('Deposit:')
+  // Find initial deposit from transaction rows (look for "Initial+Deposit" or "Initial Deposit" in comment)
+  let initialDeposit = 0
+  const allRows = doc.querySelectorAll('tr')
+  for (const row of allRows) {
+    const cells = row.querySelectorAll('td')
+    // Check if any cell contains "Initial" and "Deposit"
+    for (let i = 0; i < cells.length; i++) {
+      const cellText = cells[i]?.textContent?.trim() || ''
+      if (cellText.includes('Initial') && cellText.includes('Deposit')) {
+        // Look for the balance value (usually in the second-to-last or last cell)
+        for (let j = cells.length - 1; j >= 0; j--) {
+          const valueText = cells[j]?.textContent?.trim() || ''
+          const cleaned = valueText.replace(/\s+/g, '').replace(/[()%]/g, '')
+          const num = parseFloat(cleaned)
+          if (!isNaN(num) && num > 0) {
+            initialDeposit = num
+            break
+          }
+        }
+        if (initialDeposit > 0) break
+      }
+    }
+    if (initialDeposit > 0) break
+  }
+
+  metrics.initialDeposit = initialDeposit
   metrics.balance = findValue('Balance:')
   metrics.equity = findValue('Equity:')
   metrics.margin = findValue('Margin:')
@@ -224,10 +301,10 @@ function parseMetrics(doc: Document): MT5PerformanceMetrics {
 
   // Parse drawdown with percentage
   const drawdownMaxText = doc.body.textContent || ''
-  const drawdownMatch = drawdownMaxText.match(/Balance Drawdown Maximal:\s*<\/td>\s*<td[^>]*><b>([\d\s.]+)\s*\(([\d.]+)%\)<\/b>/)
+  const drawdownMatch = drawdownMaxText.match(/Balance Drawdown Maximal:\s*<\/td>\s*<td[^>]*><b>([\d\s.]+)\s*\(([\d.\s]+)%\)<\/b>/)
   if (drawdownMatch) {
-    metrics.balanceDrawdownMaximal = parseFloat(drawdownMatch[1].replace(/\s/g, ''))
-    metrics.balanceDrawdownMaximalPercent = parseFloat(drawdownMatch[2])
+    metrics.balanceDrawdownMaximal = parseFloat(drawdownMatch[1].replace(/\s+/g, ''))
+    metrics.balanceDrawdownMaximalPercent = parseFloat(drawdownMatch[2].replace(/\s+/g, ''))
   } else {
     metrics.balanceDrawdownMaximal = 0
     metrics.balanceDrawdownMaximalPercent = 0
@@ -250,7 +327,9 @@ function parseMetrics(doc: Document): MT5PerformanceMetrics {
             const valueCell = cells[j]
             const boldValue = valueCell?.querySelector('b')?.textContent?.trim()
             if (boldValue) {
-              const match = boldValue.match(/([\d]+)\s*\(([\d.]+)%\)/)
+              // Remove spaces before matching
+              const cleaned = boldValue.replace(/\s+/g, '')
+              const match = cleaned.match(/([\d]+)\(([\d.]+)%\)/)
               if (match) {
                 return { count: parseInt(match[1]), percent: parseFloat(match[2]) }
               }
@@ -297,7 +376,9 @@ function parseMetrics(doc: Document): MT5PerformanceMetrics {
             const valueCell = cells[j]
             const boldValue = valueCell?.querySelector('b')?.textContent?.trim()
             if (boldValue) {
-              const match = boldValue.match(/([\d]+)\s*\(([\d.-]+)\)/)
+              // Remove spaces before matching
+              const cleaned = boldValue.replace(/\s+/g, '')
+              const match = cleaned.match(/([\d]+)\(([\d.-]+)\)/)
               if (match) {
                 return { count: parseInt(match[1]), money: parseFloat(match[2]) }
               }

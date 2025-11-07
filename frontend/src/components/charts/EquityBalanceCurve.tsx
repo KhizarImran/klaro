@@ -35,6 +35,7 @@ export function EquityBalanceCurve({ trades, initialDeposit, currency = 'USD' }:
     })
 
     // Calculate cumulative balance after each trade
+    // Profit is gross profit, commission and swap are separate costs
     sortedTrades.forEach(trade => {
       runningBalance += trade.profit + trade.commission + trade.swap
 

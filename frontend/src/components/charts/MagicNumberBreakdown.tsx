@@ -26,18 +26,19 @@ export function MagicNumberBreakdown({ trades, currency = 'USD' }: MagicNumberBr
   const magicNumberStats = useMemo(() => {
     if (!trades || trades.length === 0) return []
 
-    // Group trades by magic number
+    // Group trades by strategy name (preferred) or magic number
     const groupedTrades = new Map<number | string, MT5Trade[]>()
 
     trades.forEach(trade => {
-      const key = trade.magicNumber ?? 'No Magic Number'
+      // Prefer strategy name, fallback to magic number, then "Unknown"
+      const key = trade.strategy ?? trade.magicNumber ?? 'Unknown'
       if (!groupedTrades.has(key)) {
         groupedTrades.set(key, [])
       }
       groupedTrades.get(key)!.push(trade)
     })
 
-    // Calculate stats for each magic number
+    // Calculate stats for each strategy/magic number
     const stats: MagicNumberStats[] = []
 
     groupedTrades.forEach((tradesForMagic, magicNumber) => {
@@ -85,7 +86,7 @@ export function MagicNumberBreakdown({ trades, currency = 'USD' }: MagicNumberBr
     return (
       <Card className="border-[oklch(25%_0.01_240)] bg-[oklch(14%_0.01_240)]">
         <CardHeader>
-          <CardTitle className="text-white">Magic Number Breakdown</CardTitle>
+          <CardTitle className="text-white">Strategy Breakdown</CardTitle>
           <CardDescription>No trade data available</CardDescription>
         </CardHeader>
       </Card>
@@ -95,8 +96,8 @@ export function MagicNumberBreakdown({ trades, currency = 'USD' }: MagicNumberBr
   return (
     <Card className="border-[oklch(25%_0.01_240)] bg-[oklch(14%_0.01_240)]">
       <CardHeader>
-        <CardTitle className="text-white">Magic Number Breakdown</CardTitle>
-        <CardDescription>Performance analysis by trading algorithm (magic number)</CardDescription>
+        <CardTitle className="text-white">Strategy Breakdown</CardTitle>
+        <CardDescription>Performance analysis by trading strategy</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
@@ -145,7 +146,7 @@ export function MagicNumberBreakdown({ trades, currency = 'USD' }: MagicNumberBr
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-[oklch(25%_0.01_240)]">
-                  <th className="text-left text-[oklch(65%_0.01_240)] font-medium p-2">Magic #</th>
+                  <th className="text-left text-[oklch(65%_0.01_240)] font-medium p-2">Strategy</th>
                   <th className="text-right text-[oklch(65%_0.01_240)] font-medium p-2">Trades</th>
                   <th className="text-right text-[oklch(65%_0.01_240)] font-medium p-2">Win Rate</th>
                   <th className="text-right text-[oklch(65%_0.01_240)] font-medium p-2">Net Profit</th>
@@ -191,7 +192,7 @@ export function MagicNumberBreakdown({ trades, currency = 'USD' }: MagicNumberBr
         </div>
 
         <div className="mt-4 p-3 bg-[oklch(18%_0.01_240)] rounded text-xs text-[oklch(65%_0.01_240)]">
-          <p><strong>Note:</strong> Magic numbers identify different trading algorithms or strategies. Trades without a magic number are grouped under "No Magic Number".</p>
+          <p><strong>Note:</strong> Trades are grouped by strategy name from your Expert Advisor. Trades without a strategy identifier are grouped under "Unknown".</p>
         </div>
       </CardContent>
     </Card>

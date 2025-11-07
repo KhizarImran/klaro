@@ -6,6 +6,7 @@ import { TrendingUp, Wallet, Target, TrendingDown, Award, AlertTriangle, BarChar
 import { useNavigate } from 'react-router-dom'
 import { ReportUpload } from '@/components/dashboard/ReportUpload'
 import { MetricCard } from '@/components/dashboard/MetricCard'
+import { TradesTable } from '@/components/dashboard/TradesTable'
 import { EquityBalanceCurve } from '@/components/charts/EquityBalanceCurve'
 import { MonthlyReturnsHeatmap } from '@/components/charts/MonthlyReturnsHeatmap'
 import { MagicNumberBreakdown } from '@/components/charts/MagicNumberBreakdown'
@@ -317,12 +318,10 @@ export function DashboardPage() {
 
               {/* Trades Tab */}
               <TabsContent value="trades" className="mt-6">
-                <div className="bg-[oklch(14%_0.01_240)] border border-[oklch(25%_0.01_240)] rounded-lg p-12 text-center">
-                  <h3 className="text-2xl font-bold text-white mb-2">Trade History Coming Soon</h3>
-                  <p className="text-[oklch(65%_0.01_240)]">
-                    Detailed trade-by-trade table with filtering and sorting capabilities
-                  </p>
-                </div>
+                <TradesTable
+                  trades={report.trades}
+                  currency={report.accountInfo.currency}
+                />
               </TabsContent>
             </Tabs>
           </div>
