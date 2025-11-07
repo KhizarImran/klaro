@@ -1,11 +1,19 @@
 import type { MT5Report } from '@/types/mt5'
 import type { SavedReport } from '@/components/dashboard/ReportsSidebar'
 
-const STORAGE_KEY = 'klaro_saved_reports'
-const ACTIVE_REPORT_KEY = 'klaro_active_report_id'
+const STORAGE_KEY_PREFIX = 'klaro_saved_reports'
+const ACTIVE_REPORT_KEY_PREFIX = 'klaro_active_report_id'
 
-export function saveReport(report: MT5Report): SavedReport {
-  const reports = loadReports()
+function getUserStorageKey(userId: string): string {
+  return `${STORAGE_KEY_PREFIX}_${userId}`
+}
+
+function getUserActiveReportKey(userId: string): string {
+  return `${ACTIVE_REPORT_KEY_PREFIX}_${userId}`
+}
+
+export function saveReport(report: MT5Report, userId: string): SavedReport {
+  const reports = loadReports(userId)
 
   // Generate unique ID
   const id = `report_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -21,10 +29,10 @@ export function saveReport(report: MT5Report): SavedReport {
   // Add to reports array
   reports.push(savedReport)
 
-  // Save to localStorage
+  // Save to localStorage with user-specific key
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(reports))
-    localStorage.setItem(ACTIVE_REPORT_KEY, id)
+    localStorage.setItem(getUserStorageKey(userId), JSON.stringify(reports))
+    localStorage.setItem(getUserActiveReportKey(userId), id)
   } catch (error) {
     console.error('Failed to save report to localStorage:', error)
   }
@@ -32,9 +40,9 @@ export function saveReport(report: MT5Report): SavedReport {
   return savedReport
 }
 
-export function loadReports(): SavedReport[] {
+export function loadReports(userId: string): SavedReport[] {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
+    const stored = localStorage.getItem(getUserStorageKey(userId))
     if (!stored) return []
 
     const reports = JSON.parse(stored)
@@ -65,41 +73,41 @@ export function loadReports(): SavedReport[] {
   }
 }
 
-export function deleteReport(reportId: string): void {
-  const reports = loadReports()
+export function deleteReport(reportId: string, userId: string): void {
+  const reports = loadReports(userId)
   const filtered = reports.filter(r => r.id !== reportId)
 
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered))
+    localStorage.setItem(getUserStorageKey(userId), JSON.stringify(filtered))
 
     // If we deleted the active report, clear it
-    const activeId = getActiveReportId()
+    const activeId = getActiveReportId(userId)
     if (activeId === reportId) {
-      localStorage.removeItem(ACTIVE_REPORT_KEY)
+      localStorage.removeItem(getUserActiveReportKey(userId))
     }
   } catch (error) {
     console.error('Failed to delete report from localStorage:', error)
   }
 }
 
-export function getActiveReportId(): string | null {
+export function getActiveReportId(userId: string): string | null {
   try {
-    return localStorage.getItem(ACTIVE_REPORT_KEY)
+    return localStorage.getItem(getUserActiveReportKey(userId))
   } catch (error) {
     console.error('Failed to get active report ID:', error)
     return null
   }
 }
 
-export function setActiveReportId(reportId: string): void {
+export function setActiveReportId(reportId: string, userId: string): void {
   try {
-    localStorage.setItem(ACTIVE_REPORT_KEY, reportId)
+    localStorage.setItem(getUserActiveReportKey(userId), reportId)
   } catch (error) {
     console.error('Failed to set active report ID:', error)
   }
 }
 
-export function getReportById(reportId: string): SavedReport | null {
-  const reports = loadReports()
+export function getReportById(reportId: string, userId: string): SavedReport | null {
+  const reports = loadReports(userId)
   return reports.find(r => r.id === reportId) || null
 }

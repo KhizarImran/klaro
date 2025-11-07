@@ -25,20 +25,24 @@ export function DashboardPage() {
 
   // Load saved reports on mount
   useEffect(() => {
-    const reports = loadReports()
+    if (!user?.id) return // Wait for user to be loaded
+
+    const reports = loadReports(user.id)
     setSavedReports(reports)
 
-    const activeId = getActiveReportId()
+    const activeId = getActiveReportId(user.id)
     if (activeId && reports.find(r => r.id === activeId)) {
       setActiveReportIdState(activeId)
+      setShowUpload(false) // Ensure upload is hidden when loading saved report
     } else if (reports.length > 0) {
       // If no active report but reports exist, select the most recent
       setActiveReportIdState(reports[reports.length - 1].id)
+      setShowUpload(false) // Ensure upload is hidden when auto-selecting report
     } else {
       // No reports, show upload
       setShowUpload(true)
     }
-  }, [])
+  }, [user?.id])
 
   const handleSignOut = async () => {
     await signOut()
@@ -46,30 +50,37 @@ export function DashboardPage() {
   }
 
   const handleReportParsed = (parsedReport: MT5Report) => {
-    const savedReport = saveReport(parsedReport)
-    setSavedReports(loadReports())
+    if (!user?.id) return
+
+    const savedReport = saveReport(parsedReport, user.id)
+    setSavedReports(loadReports(user.id))
     setActiveReportIdState(savedReport.id)
     setShowUpload(false)
     setSidebarOpen(false)
   }
 
   const handleSelectReport = (reportId: string) => {
+    if (!user?.id) return
+
     setActiveReportIdState(reportId)
-    setActiveReportId(reportId)
+    setActiveReportId(reportId, user.id)
+    setShowUpload(false) // Hide upload screen when selecting a report
     setSidebarOpen(false)
   }
 
   const handleDeleteReport = (reportId: string) => {
+    if (!user?.id) return
+
     if (confirm('Are you sure you want to delete this report?')) {
-      deleteReport(reportId)
-      const updatedReports = loadReports()
+      deleteReport(reportId, user.id)
+      const updatedReports = loadReports(user.id)
       setSavedReports(updatedReports)
 
       // If we deleted the active report, select another or show upload
       if (reportId === activeReportId) {
         if (updatedReports.length > 0) {
           setActiveReportIdState(updatedReports[updatedReports.length - 1].id)
-          setActiveReportId(updatedReports[updatedReports.length - 1].id)
+          setActiveReportId(updatedReports[updatedReports.length - 1].id, user.id)
         } else {
           setActiveReportIdState(null)
           setShowUpload(true)
@@ -83,7 +94,7 @@ export function DashboardPage() {
     setSidebarOpen(false)
   }
 
-  const activeReport = activeReportId ? getReportById(activeReportId)?.report : null
+  const activeReport = activeReportId && user?.id ? getReportById(activeReportId, user.id)?.report : null
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
