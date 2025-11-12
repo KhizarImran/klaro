@@ -112,9 +112,9 @@ function parseSettings(data: any[][]): MT5BacktestSettings {
 function parseTrades(data: any[][]): { trades: MT5BacktestTrade[]; initialDeposit: number; finalBalance: number } {
   const trades: MT5BacktestTrade[] = []
 
-  // Find "Deals" section header (should be around row 112-113)
+  // Find "Deals" section header dynamically (can be at different row numbers)
   let dealsRowStart = -1
-  for (let i = 100; i < data.length; i++) {
+  for (let i = 50; i < data.length; i++) {
     if (data[i]?.[0]?.toString().toLowerCase() === 'deals') {
       dealsRowStart = i + 1 // Next row is headers
       break
@@ -263,9 +263,94 @@ function parseTrades(data: any[][]): { trades: MT5BacktestTrade[]; initialDeposi
   return { trades, initialDeposit, finalBalance }
 }
 
+function createDefaultMetrics(initialDeposit: number, finalBalance: number): MT5BacktestMetrics {
+  return {
+    initialDeposit,
+    balance: finalBalance,
+    equity: finalBalance,
+    margin: 0,
+    freeMargin: 0,
+    floatingPL: 0,
+    creditFacility: 0,
+    totalNetProfit: finalBalance - initialDeposit,
+    grossProfit: 0,
+    grossLoss: 0,
+    profitFactor: 0,
+    expectedPayoff: 0,
+    recoveryFactor: 0,
+    sharpeRatio: 0,
+    totalTrades: 0,
+    shortTrades: 0,
+    shortTradesWon: 0,
+    shortTradesWonPercent: 0,
+    longTrades: 0,
+    longTradesWon: 0,
+    longTradesWonPercent: 0,
+    profitTrades: 0,
+    profitTradesPercent: 0,
+    lossTrades: 0,
+    lossTradesPercent: 0,
+    largestProfitTrade: 0,
+    largestLossTrade: 0,
+    averageProfitTrade: 0,
+    averageLossTrade: 0,
+    maxConsecutiveWins: 0,
+    maxConsecutiveWinsMoney: 0,
+    maxConsecutiveLosses: 0,
+    maxConsecutiveLossesMoney: 0,
+    maximalConsecutiveProfit: 0,
+    maximalConsecutiveProfitCount: 0,
+    maximalConsecutiveLoss: 0,
+    maximalConsecutiveLossCount: 0,
+    averageConsecutiveWins: 0,
+    averageConsecutiveLosses: 0,
+    bars: 0,
+    ticks: 0,
+    symbols: 1,
+    totalDeals: 0,
+    balanceDrawdownAbsolute: 0,
+    balanceDrawdownMaximal: 0,
+    balanceDrawdownMaximalPercent: 0,
+    balanceDrawdownRelative: 0,
+    balanceDrawdownRelativePercent: 0,
+    equityDrawdownAbsolute: 0,
+    equityDrawdownMaximal: 0,
+    equityDrawdownMaximalPercent: 0,
+    equityDrawdownRelative: 0,
+    equityDrawdownRelativePercent: 0,
+    marginLevel: 0,
+    zScore: 0,
+    zScorePercent: 0,
+    ahpr: 0,
+    ahprPercent: 0,
+    ghpr: 0,
+    ghprPercent: 0,
+    lrCorrelation: 0,
+    lrStandardError: 0,
+    onTesterResult: 0,
+    correlationProfitsMFE: 0,
+    correlationProfitsMAE: 0,
+    correlationMFEMAE: 0,
+    minPositionHoldingTime: '0:00:00',
+    maxPositionHoldingTime: '0:00:00',
+    avgPositionHoldingTime: '0:00:00',
+  }
+}
+
 function parseMetrics(data: any[][], initialDeposit: number, finalBalance: number): MT5BacktestMetrics {
-  // Metrics are in rows 51-70
-  // Row format: [label, '', '', value, label, '', '', value, label, '', '', value]
+  // Find metrics section dynamically by searching for "Bars:" label
+  let metricsStart = -1
+  for (let i = 40; i < 200; i++) {
+    if (data[i]?.[0]?.toString().toLowerCase().includes('bars:')) {
+      metricsStart = i
+      break
+    }
+  }
+
+  if (metricsStart === -1) {
+    // Fallback to defaults if metrics section not found
+    return createDefaultMetrics(initialDeposit, finalBalance)
+  }
 
   const metrics: Partial<MT5BacktestMetrics> = {}
 
@@ -274,101 +359,101 @@ function parseMetrics(data: any[][], initialDeposit: number, finalBalance: numbe
     return row?.[colIndex] !== '' ? row[colIndex] : undefined
   }
 
-  // Row 51: Bars (D), Ticks (H), Symbols (L)
-  metrics.bars = parseInt(getValue(data[51], 3) || 0)
-  metrics.ticks = parseInt(getValue(data[51], 7) || 0)
-  metrics.symbols = parseInt(getValue(data[51], 11) || 1)
+  // Row +0: Bars (D), Ticks (H), Symbols (L)
+  metrics.bars = parseInt(getValue(data[metricsStart], 3) || 0)
+  metrics.ticks = parseInt(getValue(data[metricsStart], 7) || 0)
+  metrics.symbols = parseInt(getValue(data[metricsStart], 11) || 1)
 
-  // Row 52: Total Net Profit (D), Balance DD Absolute (H), Equity DD Absolute (L)
-  metrics.totalNetProfit = parseFloat(getValue(data[52], 3) || 0)
-  metrics.balanceDrawdownAbsolute = parseFloat(getValue(data[52], 7) || 0)
-  metrics.equityDrawdownAbsolute = parseFloat(getValue(data[52], 11) || 0)
+  // Row +1: Total Net Profit (D), Balance DD Absolute (H), Equity DD Absolute (L)
+  metrics.totalNetProfit = parseFloat(getValue(data[metricsStart + 1], 3) || 0)
+  metrics.balanceDrawdownAbsolute = parseFloat(getValue(data[metricsStart + 1], 7) || 0)
+  metrics.equityDrawdownAbsolute = parseFloat(getValue(data[metricsStart + 1], 11) || 0)
 
-  // Row 53: Gross Profit (D), Balance DD Maximal (H), Equity DD Maximal (L)
-  metrics.grossProfit = parseFloat(getValue(data[53], 3) || 0)
-  const balanceDDMax = getValue(data[53], 7)?.toString() || '0'
+  // Row +2: Gross Profit (D), Balance DD Maximal (H), Equity DD Maximal (L)
+  metrics.grossProfit = parseFloat(getValue(data[metricsStart + 2], 3) || 0)
+  const balanceDDMax = getValue(data[metricsStart + 2], 7)?.toString() || '0'
   const balanceDDMatch = balanceDDMax.match(/([\d.-]+)\s*\(([\d.]+)%\)/)
   if (balanceDDMatch) {
     metrics.balanceDrawdownMaximal = parseFloat(balanceDDMatch[1])
     metrics.balanceDrawdownMaximalPercent = parseFloat(balanceDDMatch[2])
   }
-  const equityDDMax = getValue(data[53], 11)?.toString() || '0'
+  const equityDDMax = getValue(data[metricsStart + 2], 11)?.toString() || '0'
   const equityDDMatch = equityDDMax.match(/([\d.-]+)\s*\(([\d.]+)%\)/)
   if (equityDDMatch) {
     metrics.equityDrawdownMaximal = parseFloat(equityDDMatch[1])
     metrics.equityDrawdownMaximalPercent = parseFloat(equityDDMatch[2])
   }
 
-  // Row 54: Gross Loss (D), Balance DD Relative (H), Equity DD Relative (L)
-  metrics.grossLoss = parseFloat(getValue(data[54], 3) || 0)
-  const balanceDDRel = getValue(data[54], 7)?.toString() || '0'
+  // Row +3: Gross Loss (D), Balance DD Relative (H), Equity DD Relative (L)
+  metrics.grossLoss = parseFloat(getValue(data[metricsStart + 3], 3) || 0)
+  const balanceDDRel = getValue(data[metricsStart + 3], 7)?.toString() || '0'
   const balanceDDRelMatch = balanceDDRel.match(/([\d.]+)%\s*\(([\d.-]+)\)/)
   if (balanceDDRelMatch) {
     metrics.balanceDrawdownRelativePercent = parseFloat(balanceDDRelMatch[1])
     metrics.balanceDrawdownRelative = parseFloat(balanceDDRelMatch[2])
   }
-  const equityDDRel = getValue(data[54], 11)?.toString() || '0'
+  const equityDDRel = getValue(data[metricsStart + 3], 11)?.toString() || '0'
   const equityDDRelMatch = equityDDRel.match(/([\d.]+)%\s*\(([\d.-]+)\)/)
   if (equityDDRelMatch) {
     metrics.equityDrawdownRelativePercent = parseFloat(equityDDRelMatch[1])
     metrics.equityDrawdownRelative = parseFloat(equityDDRelMatch[2])
   }
 
-  // Row 56: Profit Factor (D), Expected Payoff (H), Margin Level (L)
-  metrics.profitFactor = parseFloat(getValue(data[56], 3) || 0)
-  metrics.expectedPayoff = parseFloat(getValue(data[56], 7) || 0)
-  const marginLevel = getValue(data[56], 11)?.toString() || '0'
+  // Row +5: Profit Factor (D), Expected Payoff (H), Margin Level (L)
+  metrics.profitFactor = parseFloat(getValue(data[metricsStart + 5], 3) || 0)
+  metrics.expectedPayoff = parseFloat(getValue(data[metricsStart + 5], 7) || 0)
+  const marginLevel = getValue(data[metricsStart + 5], 11)?.toString() || '0'
   metrics.marginLevel = parseFloat(marginLevel.replace('%', ''))
 
-  // Row 57: Recovery Factor (D), Sharpe Ratio (H), Z-Score (L)
-  metrics.recoveryFactor = parseFloat(getValue(data[57], 3) || 0)
-  metrics.sharpeRatio = parseFloat(getValue(data[57], 7) || 0)
-  const zScore = getValue(data[57], 11)?.toString() || '0'
+  // Row +6: Recovery Factor (D), Sharpe Ratio (H), Z-Score (L)
+  metrics.recoveryFactor = parseFloat(getValue(data[metricsStart + 6], 3) || 0)
+  metrics.sharpeRatio = parseFloat(getValue(data[metricsStart + 6], 7) || 0)
+  const zScore = getValue(data[metricsStart + 6], 11)?.toString() || '0'
   const zScoreMatch = zScore.match(/([\d.-]+)\s*\(([\d.]+)%\)/)
   if (zScoreMatch) {
     metrics.zScore = parseFloat(zScoreMatch[1])
     metrics.zScorePercent = parseFloat(zScoreMatch[2])
   }
 
-  // Row 58: AHPR (D), LR Correlation (H), OnTester result (L)
-  const ahpr = getValue(data[58], 3)?.toString() || '0'
+  // Row +7: AHPR (D), LR Correlation (H), OnTester result (L)
+  const ahpr = getValue(data[metricsStart + 7], 3)?.toString() || '0'
   const ahprMatch = ahpr.match(/([\d.]+)\s*\(([\d.]+)%\)/)
   if (ahprMatch) {
     metrics.ahpr = parseFloat(ahprMatch[1])
     metrics.ahprPercent = parseFloat(ahprMatch[2])
   }
-  metrics.lrCorrelation = parseFloat(getValue(data[58], 7) || 0)
-  metrics.onTesterResult = parseFloat(getValue(data[58], 11) || 0)
+  metrics.lrCorrelation = parseFloat(getValue(data[metricsStart + 7], 7) || 0)
+  metrics.onTesterResult = parseFloat(getValue(data[metricsStart + 7], 11) || 0)
 
-  // Row 59: GHPR (D), LR Standard Error (H)
-  const ghpr = getValue(data[59], 3)?.toString() || '0'
+  // Row +8: GHPR (D), LR Standard Error (H)
+  const ghpr = getValue(data[metricsStart + 8], 3)?.toString() || '0'
   const ghprMatch = ghpr.match(/([\d.]+)\s*\(([\d.]+)%\)/)
   if (ghprMatch) {
     metrics.ghpr = parseFloat(ghprMatch[1])
     metrics.ghprPercent = parseFloat(ghprMatch[2])
   }
-  metrics.lrStandardError = parseFloat(getValue(data[59], 7) || 0)
+  metrics.lrStandardError = parseFloat(getValue(data[metricsStart + 8], 7) || 0)
 
-  // Row 61: Correlations
-  metrics.correlationProfitsMFE = parseFloat(getValue(data[61], 3) || 0)
-  metrics.correlationProfitsMAE = parseFloat(getValue(data[61], 7) || 0)
-  metrics.correlationMFEMAE = parseFloat(getValue(data[61], 11) || 0)
+  // Row +10: Correlations
+  metrics.correlationProfitsMFE = parseFloat(getValue(data[metricsStart + 10], 3) || 0)
+  metrics.correlationProfitsMAE = parseFloat(getValue(data[metricsStart + 10], 7) || 0)
+  metrics.correlationMFEMAE = parseFloat(getValue(data[metricsStart + 10], 11) || 0)
 
-  // Row 62: Position holding times
-  metrics.minPositionHoldingTime = getValue(data[62], 3)?.toString() || '0:00:00'
-  metrics.maxPositionHoldingTime = getValue(data[62], 7)?.toString() || '0:00:00'
-  metrics.avgPositionHoldingTime = getValue(data[62], 11)?.toString() || '0:00:00'
+  // Row +11: Position holding times
+  metrics.minPositionHoldingTime = getValue(data[metricsStart + 11], 3)?.toString() || '0:00:00'
+  metrics.maxPositionHoldingTime = getValue(data[metricsStart + 11], 7)?.toString() || '0:00:00'
+  metrics.avgPositionHoldingTime = getValue(data[metricsStart + 11], 11)?.toString() || '0:00:00'
 
-  // Row 64: Total Trades (D), Short Trades (H), Long Trades (L)
-  metrics.totalTrades = parseInt(getValue(data[64], 3) || 0)
-  const shortTrades = getValue(data[64], 7)?.toString() || '0'
+  // Row +13: Total Trades (D), Short Trades (H), Long Trades (L)
+  metrics.totalTrades = parseInt(getValue(data[metricsStart + 13], 3) || 0)
+  const shortTrades = getValue(data[metricsStart + 13], 7)?.toString() || '0'
   const shortMatch = shortTrades.match(/(\d+)\s*\(([\d.]+)%\)/)
   if (shortMatch) {
     metrics.shortTrades = parseInt(shortMatch[1])
     metrics.shortTradesWonPercent = parseFloat(shortMatch[2])
     metrics.shortTradesWon = Math.round(metrics.shortTrades * metrics.shortTradesWonPercent / 100)
   }
-  const longTrades = getValue(data[64], 11)?.toString() || '0'
+  const longTrades = getValue(data[metricsStart + 13], 11)?.toString() || '0'
   const longMatch = longTrades.match(/(\d+)\s*\(([\d.]+)%\)/)
   if (longMatch) {
     metrics.longTrades = parseInt(longMatch[1])
@@ -376,60 +461,60 @@ function parseMetrics(data: any[][], initialDeposit: number, finalBalance: numbe
     metrics.longTradesWon = Math.round(metrics.longTrades * metrics.longTradesWonPercent / 100)
   }
 
-  // Row 65: Total Deals (D), Profit Trades (H), Loss Trades (L)
-  metrics.totalDeals = parseInt(getValue(data[65], 3) || 0)
-  const profitTrades = getValue(data[65], 7)?.toString() || '0'
+  // Row +14: Total Deals (D), Profit Trades (H), Loss Trades (L)
+  metrics.totalDeals = parseInt(getValue(data[metricsStart + 14], 3) || 0)
+  const profitTrades = getValue(data[metricsStart + 14], 7)?.toString() || '0'
   const profitMatch = profitTrades.match(/(\d+)\s*\(([\d.]+)%\)/)
   if (profitMatch) {
     metrics.profitTrades = parseInt(profitMatch[1])
     metrics.profitTradesPercent = parseFloat(profitMatch[2])
   }
-  const lossTrades = getValue(data[65], 11)?.toString() || '0'
+  const lossTrades = getValue(data[metricsStart + 14], 11)?.toString() || '0'
   const lossMatch = lossTrades.match(/(\d+)\s*\(([\d.]+)%\)/)
   if (lossMatch) {
     metrics.lossTrades = parseInt(lossMatch[1])
     metrics.lossTradesPercent = parseFloat(lossMatch[2])
   }
 
-  // Row 66: Largest trades
-  metrics.largestProfitTrade = parseFloat(getValue(data[66], 7) || 0)
-  metrics.largestLossTrade = parseFloat(getValue(data[66], 11) || 0)
+  // Row +15: Largest trades
+  metrics.largestProfitTrade = parseFloat(getValue(data[metricsStart + 15], 7) || 0)
+  metrics.largestLossTrade = parseFloat(getValue(data[metricsStart + 15], 11) || 0)
 
-  // Row 67: Average trades
-  metrics.averageProfitTrade = parseFloat(getValue(data[67], 7) || 0)
-  metrics.averageLossTrade = parseFloat(getValue(data[67], 11) || 0)
+  // Row +16: Average trades
+  metrics.averageProfitTrade = parseFloat(getValue(data[metricsStart + 16], 7) || 0)
+  metrics.averageLossTrade = parseFloat(getValue(data[metricsStart + 16], 11) || 0)
 
-  // Row 68: Max consecutive
-  const maxConsecWins = getValue(data[68], 7)?.toString() || '0'
+  // Row +17: Max consecutive
+  const maxConsecWins = getValue(data[metricsStart + 17], 7)?.toString() || '0'
   const maxWinsMatch = maxConsecWins.match(/(\d+)\s*\(([\d.-]+)\)/)
   if (maxWinsMatch) {
     metrics.maxConsecutiveWins = parseInt(maxWinsMatch[1])
     metrics.maxConsecutiveWinsMoney = parseFloat(maxWinsMatch[2])
   }
-  const maxConsecLoss = getValue(data[68], 11)?.toString() || '0'
+  const maxConsecLoss = getValue(data[metricsStart + 17], 11)?.toString() || '0'
   const maxLossMatch = maxConsecLoss.match(/(\d+)\s*\(([\d.-]+)\)/)
   if (maxLossMatch) {
     metrics.maxConsecutiveLosses = parseInt(maxLossMatch[1])
     metrics.maxConsecutiveLossesMoney = parseFloat(maxLossMatch[2])
   }
 
-  // Row 69: Maximal consecutive profit/loss
-  const maximalProfit = getValue(data[69], 7)?.toString() || '0'
+  // Row +18: Maximal consecutive profit/loss
+  const maximalProfit = getValue(data[metricsStart + 18], 7)?.toString() || '0'
   const maxProfitMatch = maximalProfit.match(/([\d.-]+)\s*\((\d+)\)/)
   if (maxProfitMatch) {
     metrics.maximalConsecutiveProfit = parseFloat(maxProfitMatch[1])
     metrics.maximalConsecutiveProfitCount = parseInt(maxProfitMatch[2])
   }
-  const maximalLoss = getValue(data[69], 11)?.toString() || '0'
+  const maximalLoss = getValue(data[metricsStart + 18], 11)?.toString() || '0'
   const maxLossMatch2 = maximalLoss.match(/([\d.-]+)\s*\((\d+)\)/)
   if (maxLossMatch2) {
     metrics.maximalConsecutiveLoss = parseFloat(maxLossMatch2[1])
     metrics.maximalConsecutiveLossCount = parseInt(maxLossMatch2[2])
   }
 
-  // Row 70: Average consecutive
-  metrics.averageConsecutiveWins = parseInt(getValue(data[70], 7) || 0)
-  metrics.averageConsecutiveLosses = parseInt(getValue(data[70], 11) || 0)
+  // Row +19: Average consecutive
+  metrics.averageConsecutiveWins = parseInt(getValue(data[metricsStart + 19], 7) || 0)
+  metrics.averageConsecutiveLosses = parseInt(getValue(data[metricsStart + 19], 11) || 0)
 
   // Set balance info from trades
   metrics.initialDeposit = initialDeposit

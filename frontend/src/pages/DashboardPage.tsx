@@ -105,7 +105,8 @@ export function DashboardPage() {
     }).format(value)
   }
 
-  const formatPercent = (value: number) => {
+  const formatPercent = (value: number | undefined) => {
+    if (value === undefined || value === null) return 'N/A'
     return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`
   }
 
