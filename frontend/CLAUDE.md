@@ -59,21 +59,27 @@ const accountNumber = report.accountInfo.accountNumber  // Error if backtest!
 
 ### Data Flow
 
-1. **Upload**: User uploads HTML file via `ReportUpload` component (dual upload boxes for each type)
+1. **Upload**: User uploads file via `ReportUpload` component (dual upload boxes for each type)
+   - Trade History: HTML files
+   - Backtest: XLSX (Excel) files
 2. **Parsing**:
-   - Trade History: `parseMT5Report()` in `src/utils/mt5Parser.ts`
-   - Backtest: `parseMT5BacktestReport()` in `src/utils/mt5BacktestParser.ts`
+   - Trade History: `parseMT5Report()` in `src/utils/mt5Parser.ts` (HTML parsing)
+   - Backtest: `parseMT5BacktestReport()` in `src/utils/mt5BacktestParser.ts` (XLSX parsing)
 3. **Storage**: Reports saved to browser localStorage (user-scoped) via `src/utils/reportStorage.ts`
 4. **Display**: `DashboardPage` renders metrics, charts, and trades table with type-specific handling
 
-### HTML Parser Details
+### Parser Details
 
-**Important**: MT5 backtest reports are UTF-16 Little Endian encoded. The browser's `DOMParser` handles this automatically when reading from `File.text()`, but external tools (like `iconv`) may be needed for debugging.
-
-**Parsing Strategy**:
+**Trade History (HTML Parser)**:
+- MT5 HTML reports may use UTF-16 Little Endian encoding
+- Browser's `DOMParser` handles encoding automatically when reading from `File.text()`
 - Metrics extracted by finding cells with `colspan` attributes (labels) and adjacent value cells
 - Trades parsed from `<tr bgcolor>` rows
-- Initial deposit extracted from first "balance" entry
+
+**Backtest (XLSX Parser)**:
+- Dynamic XLSX parsing for MT5 Strategy Tester reports
+- Metrics and trades extracted from structured Excel sheets
+- Initial deposit extracted from balance entries
 - Open/close trade matching done via order number
 
 ### State Management
@@ -158,4 +164,6 @@ See `DASHBOARD_DESIGN.md` for detailed UI/UX specifications including:
 - **Date Handling**: All dates serialized/deserialized when saving to localStorage
 - **Type Safety**: Always run `npm run typecheck` before committing - the dual report types make type errors common
 - **Magic Numbers**: Trade `magicNumber` field used to identify Expert Advisor strategies
-- **Parser Robustness**: MT5 HTML structure may vary by version - parsers use flexible cell traversal with `colspan` detection
+- **Parser Robustness**:
+  - Trade History (HTML): MT5 HTML structure may vary by version - parser uses flexible cell traversal with `colspan` detection
+  - Backtest (XLSX): Dynamic parser adapts to Excel sheet structure

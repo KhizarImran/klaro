@@ -171,7 +171,7 @@ export function LandingPage() {
               </CardHeader>
               <CardContent>
                 <div className="mb-6">
-                  <span className="text-5xl font-bold text-emerald-500">$29</span>
+                  <span className="text-5xl font-bold text-emerald-500">$4.99</span>
                   <span className="text-[oklch(65%_0.01_240)] text-xl">/month</span>
                 </div>
                 <ul className="space-y-3">
