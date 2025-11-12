@@ -1,164 +1,264 @@
 import { useState, useCallback } from 'react'
-import { Upload, FileText, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Upload, FileText, AlertCircle, CheckCircle2, TrendingUp, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { parseMT5Report } from '@/utils/mt5Parser'
-import type { MT5Report } from '@/types/mt5'
+import { parseMT5BacktestReportXLSX } from '@/utils/mt5BacktestParserXLSX'
+import type { MT5Report, MT5BacktestReport, AnyMT5Report } from '@/types/mt5'
 
 interface ReportUploadProps {
-  onReportParsed: (report: MT5Report) => void
+  onReportParsed: (report: AnyMT5Report) => void
 }
 
-export function ReportUpload({ onReportParsed }: ReportUploadProps) {
-  const [isDragging, setIsDragging] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
+type ReportType = 'trade-history' | 'backtest'
 
-  const handleFile = useCallback(async (file: File) => {
+export function ReportUpload({ onReportParsed }: ReportUploadProps) {
+  const [tradeHistoryDragging, setTradeHistoryDragging] = useState(false)
+  const [backtestDragging, setBacktestDragging] = useState(false)
+  const [processingType, setProcessingType] = useState<ReportType | null>(null)
+  const [error, setError] = useState<{ type: ReportType; message: string } | null>(null)
+  const [success, setSuccess] = useState<ReportType | null>(null)
+
+  const handleFile = useCallback(async (file: File, reportType: ReportType) => {
     setError(null)
-    setSuccess(false)
-    setIsProcessing(true)
+    setSuccess(null)
+    setProcessingType(reportType)
 
     try {
-      // Validate file type
-      if (!file.name.endsWith('.html') && !file.name.endsWith('.htm')) {
-        throw new Error('Please upload an HTML file (.html or .htm)')
+      // Parse the appropriate report type
+      if (reportType === 'trade-history') {
+        // Validate file type for trade history (HTML)
+        if (!file.name.endsWith('.html') && !file.name.endsWith('.htm')) {
+          throw new Error('Please upload an HTML file (.html or .htm)')
+        }
+
+        // Read file content as text
+        const content = await file.text()
+        const result = parseMT5Report(content)
+
+        if (!result.success || !result.report) {
+          throw new Error(result.error || 'Failed to parse MT5 Trade History report')
+        }
+        setSuccess(reportType)
+        setTimeout(() => {
+          onReportParsed(result.report!)
+        }, 500)
+      } else {
+        // Validate file type for backtest (XLSX)
+        if (!file.name.endsWith('.xlsx')) {
+          throw new Error('Please upload an Excel file (.xlsx)')
+        }
+
+        // Read file content as ArrayBuffer for XLSX
+        const buffer = await file.arrayBuffer()
+        const result = parseMT5BacktestReportXLSX(buffer)
+
+        if (!result.success || !result.report) {
+          throw new Error(result.error || 'Failed to parse MT5 Backtest report')
+        }
+        setSuccess(reportType)
+        setTimeout(() => {
+          onReportParsed(result.report!)
+        }, 500)
       }
-
-      // Read file content
-      const content = await file.text()
-
-      // Parse the MT5 report
-      const result = parseMT5Report(content)
-
-      if (!result.success || !result.report) {
-        throw new Error(result.error || 'Failed to parse MT5 report')
-      }
-
-      // Success
-      setSuccess(true)
-      setTimeout(() => {
-        onReportParsed(result.report!)
-      }, 500)
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error occurred')
+      setError({
+        type: reportType,
+        message: err instanceof Error ? err.message : 'Unknown error occurred'
+      })
     } finally {
-      setIsProcessing(false)
+      setProcessingType(null)
     }
   }, [onReportParsed])
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
+  const createDropHandlers = (reportType: ReportType) => ({
+    onDrop: useCallback((e: React.DragEvent) => {
+      e.preventDefault()
+      if (reportType === 'trade-history') {
+        setTradeHistoryDragging(false)
+      } else {
+        setBacktestDragging(false)
+      }
 
-    const file = e.dataTransfer.files[0]
-    if (file) {
-      handleFile(file)
-    }
-  }, [handleFile])
+      const file = e.dataTransfer.files[0]
+      if (file) {
+        handleFile(file, reportType)
+      }
+    }, [reportType]),
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }, [])
+    onDragOver: useCallback((e: React.DragEvent) => {
+      e.preventDefault()
+      if (reportType === 'trade-history') {
+        setTradeHistoryDragging(true)
+      } else {
+        setBacktestDragging(true)
+      }
+    }, [reportType]),
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-  }, [])
+    onDragLeave: useCallback((e: React.DragEvent) => {
+      e.preventDefault()
+      if (reportType === 'trade-history') {
+        setTradeHistoryDragging(false)
+      } else {
+        setBacktestDragging(false)
+      }
+    }, [reportType]),
+  })
 
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>, reportType: ReportType) => {
     const file = e.target.files?.[0]
     if (file) {
-      handleFile(file)
+      handleFile(file, reportType)
     }
   }, [handleFile])
 
-  return (
-    <div className="w-full">
-      <div
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        className={`
-          border-2 border-dashed rounded-lg p-12 text-center transition-all
-          ${isDragging
-            ? 'border-emerald-500 bg-emerald-500/10'
-            : 'border-[oklch(25%_0.01_240)] bg-[oklch(14%_0.01_240)]'
-          }
-          ${isProcessing ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}
-        `}
-      >
-        <input
-          type="file"
-          accept=".html,.htm"
-          onChange={handleFileInput}
-          className="hidden"
-          id="file-upload"
-          disabled={isProcessing}
-        />
+  const renderUploadBox = (
+    reportType: ReportType,
+    isDragging: boolean,
+    icon: React.ElementType,
+    title: string,
+    description: string,
+    instructions: { title: string; steps: string[] },
+    acceptedFiles: string
+  ) => {
+    const isProcessing = processingType === reportType
+    const isSuccess = success === reportType
+    const boxError = error?.type === reportType ? error.message : null
+    const handlers = createDropHandlers(reportType)
+    const inputId = `file-upload-${reportType}`
 
-        <label htmlFor="file-upload" className="cursor-pointer">
-          <div className="flex flex-col items-center space-y-4">
-            {isProcessing ? (
-              <>
-                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-emerald-500"></div>
-                <p className="text-lg font-medium text-white">Processing report...</p>
-              </>
-            ) : success ? (
-              <>
-                <CheckCircle2 className="h-16 w-16 text-emerald-500" />
-                <p className="text-lg font-medium text-emerald-500">Report uploaded successfully!</p>
-              </>
-            ) : (
-              <>
-                <div className="bg-emerald-500/10 rounded-full p-4">
-                  <Upload className="h-12 w-12 text-emerald-500" />
-                </div>
-                <div>
-                  <p className="text-xl font-semibold text-white mb-2">
-                    Upload MT5 Trade History Report
-                  </p>
-                  <p className="text-[oklch(65%_0.01_240)] mb-4">
-                    Drag and drop your HTML file here, or click to browse
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  className="border-emerald-500 text-emerald-500 hover:bg-emerald-500/10"
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  Choose File
-                </Button>
-                <p className="text-sm text-[oklch(55%_0.01_240)]">
-                  Supports: .html, .htm files
-                </p>
-              </>
-            )}
-          </div>
-        </label>
+    return (
+      <div className="w-full">
+        <div
+          {...handlers}
+          className={`
+            border-2 border-dashed rounded-lg p-10 text-center transition-all
+            ${isDragging
+              ? 'border-emerald-500 bg-emerald-500/10'
+              : 'border-[oklch(25%_0.01_240)] bg-[oklch(14%_0.01_240)]'
+            }
+            ${isProcessing ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}
+          `}
+        >
+          <input
+            type="file"
+            accept={acceptedFiles}
+            onChange={(e) => handleFileInput(e, reportType)}
+            className="hidden"
+            id={inputId}
+            disabled={isProcessing}
+          />
 
-        {error && (
-          <div className="mt-6 bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-            <div className="flex items-center text-red-400">
-              <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
-              <p className="text-sm">{error}</p>
+          <label htmlFor={inputId} className="cursor-pointer">
+            <div className="flex flex-col items-center space-y-4">
+              {isProcessing ? (
+                <>
+                  <div className="animate-spin rounded-full h-14 w-14 border-b-2 border-emerald-500"></div>
+                  <p className="text-base font-medium text-white">Processing report...</p>
+                </>
+              ) : isSuccess ? (
+                <>
+                  <CheckCircle2 className="h-14 w-14 text-emerald-500" />
+                  <p className="text-base font-medium text-emerald-500">Report uploaded successfully!</p>
+                </>
+              ) : (
+                <>
+                  <div className="bg-emerald-500/10 rounded-full p-3">
+                    {icon === TrendingUp ? (
+                      <TrendingUp className="h-10 w-10 text-emerald-500" />
+                    ) : (
+                      <Zap className="h-10 w-10 text-amber-500" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold text-white mb-1">
+                      {title}
+                    </p>
+                    <p className="text-sm text-[oklch(65%_0.01_240)] mb-3">
+                      {description}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-emerald-500 text-emerald-500 hover:bg-emerald-500/10"
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Choose File
+                  </Button>
+                  <p className="text-xs text-[oklch(55%_0.01_240)]">
+                    Supports: {acceptedFiles.replace(/\./g, '').replace(/,/g, ', ')} files
+                  </p>
+                </>
+              )}
             </div>
-          </div>
-        )}
-      </div>
+          </label>
 
-      <div className="mt-6 bg-[oklch(14%_0.01_240)] border border-[oklch(25%_0.01_240)] rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-white mb-3">How to export from MT5:</h3>
-        <ol className="space-y-2 text-[oklch(65%_0.01_240)] text-sm list-decimal list-inside">
-          <li>Open MetaTrader 5 terminal</li>
-          <li>Go to "Toolbox" tab at the bottom</li>
-          <li>Select "History" tab</li>
-          <li>Right-click and choose "Save as Detailed Report"</li>
-          <li>Save the HTML file</li>
-          <li>Upload it here</li>
-        </ol>
+          {boxError && (
+            <div className="mt-4 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+              <div className="flex items-center text-red-400">
+                <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+                <p className="text-xs">{boxError}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-4 bg-[oklch(14%_0.01_240)] border border-[oklch(25%_0.01_240)] rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-white mb-2">{instructions.title}</h3>
+          <ol className="space-y-1 text-[oklch(65%_0.01_240)] text-xs list-decimal list-inside">
+            {instructions.steps.map((step, i) => (
+              <li key={i}>{step}</li>
+            ))}
+          </ol>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="w-full space-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Trade History Report Upload */}
+        {renderUploadBox(
+          'trade-history',
+          tradeHistoryDragging,
+          TrendingUp,
+          'MT5 Trade History Report',
+          'Upload your live trading account history',
+          {
+            title: 'How to export from MT5:',
+            steps: [
+              'Open MetaTrader 5 terminal',
+              'Go to "Toolbox" → "History" tab',
+              'Right-click and choose "Save as Detailed Report"',
+              'Save the HTML file and upload it here',
+            ],
+          },
+          '.html,.htm'
+        )}
+
+        {/* Backtest Report Upload */}
+        {renderUploadBox(
+          'backtest',
+          backtestDragging,
+          Zap,
+          'MT5 Backtest Report',
+          'Upload your Strategy Tester results (Excel format)',
+          {
+            title: 'How to export from Strategy Tester:',
+            steps: [
+              'Open MetaTrader 5 terminal',
+              'Go to "View" → "Strategy Tester"',
+              'Run your backtest',
+              'Right-click on test result → "Report"',
+              'Save the HTML report, then open in Excel',
+              'In Excel: File → Save As → Excel Workbook (.xlsx)',
+              'Upload the XLSX file here',
+            ],
+          },
+          '.xlsx'
+        )}
       </div>
     </div>
   )

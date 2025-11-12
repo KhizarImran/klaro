@@ -11,7 +11,7 @@ import { ReportsSidebar, type SavedReport } from '@/components/dashboard/Reports
 import { EquityBalanceCurve } from '@/components/charts/EquityBalanceCurve'
 import { MonthlyReturnsHeatmap } from '@/components/charts/MonthlyReturnsHeatmap'
 import { MagicNumberBreakdown } from '@/components/charts/MagicNumberBreakdown'
-import type { MT5Report } from '@/types/mt5'
+import type { AnyMT5Report } from '@/types/mt5'
 import { calculateDerivedMetrics } from '@/utils/mt5Parser'
 import { loadReports, saveReport, deleteReport, getActiveReportId, setActiveReportId, getReportById } from '@/utils/reportStorage'
 
@@ -49,7 +49,7 @@ export function DashboardPage() {
     navigate('/')
   }
 
-  const handleReportParsed = (parsedReport: MT5Report) => {
+  const handleReportParsed = (parsedReport: AnyMT5Report) => {
     if (!user?.id) return
 
     const savedReport = saveReport(parsedReport, user.id)
@@ -109,7 +109,7 @@ export function DashboardPage() {
     return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`
   }
 
-  const derived = activeReport ? calculateDerivedMetrics(activeReport) : null
+  const derived = activeReport && activeReport.type === 'trade-history' ? calculateDerivedMetrics(activeReport) : null
 
   return (
     <div className="min-h-screen bg-[oklch(10%_0.01_240)] text-white">
@@ -188,7 +188,11 @@ export function DashboardPage() {
           </h1>
           <p className="text-lg text-[oklch(65%_0.01_240)]">
             {activeReport && !showUpload
-              ? `Analyzing account ${activeReport.accountInfo.accountNumber} from ${activeReport.accountInfo.company}`
+              ? activeReport.type === 'trade-history'
+                ? `Analyzing account ${activeReport.accountInfo.accountNumber} from ${activeReport.accountInfo.company}`
+                : activeReport.type === 'backtest'
+                  ? `Backtest: ${activeReport.settings.expert} on ${activeReport.settings.symbol}`
+                  : 'MT5 Report Loaded'
               : 'Upload your MT5 report to get started with advanced analytics'
             }
           </p>
@@ -198,16 +202,29 @@ export function DashboardPage() {
           <ReportUpload onReportParsed={handleReportParsed} />
         ) : (
           <div className="space-y-8">
-            {/* Account Info Banner */}
+            {/* Report Info Banner */}
             <div className="bg-[oklch(14%_0.01_240)] border border-[oklch(25%_0.01_240)] rounded-lg p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-1">
-                    {activeReport.accountInfo.name}
-                  </h2>
-                  <p className="text-[oklch(65%_0.01_240)]">
-                    Account: {activeReport.accountInfo.accountNumber} • {activeReport.accountInfo.company} • {activeReport.accountInfo.server}
-                  </p>
+                  {activeReport.type === 'trade-history' ? (
+                    <>
+                      <h2 className="text-2xl font-bold text-white mb-1">
+                        {activeReport.accountInfo.name}
+                      </h2>
+                      <p className="text-[oklch(65%_0.01_240)]">
+                        Account: {activeReport.accountInfo.accountNumber} • {activeReport.accountInfo.company} • {activeReport.accountInfo.server}
+                      </p>
+                    </>
+                  ) : activeReport.type === 'backtest' ? (
+                    <>
+                      <h2 className="text-2xl font-bold text-white mb-1">
+                        {activeReport.settings.expert}
+                      </h2>
+                      <p className="text-[oklch(65%_0.01_240)]">
+                        Symbol: {activeReport.settings.symbol} • Period: {activeReport.settings.period} • Broker: {activeReport.settings.broker}
+                      </p>
+                    </>
+                  ) : null}
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -410,20 +427,20 @@ export function DashboardPage() {
                 <EquityBalanceCurve
                   trades={activeReport.trades}
                   initialDeposit={activeReport.metrics.initialDeposit}
-                  currency={activeReport.accountInfo.currency}
+                  currency={activeReport.type === 'trade-history' ? activeReport.accountInfo.currency : 'USD'}
                 />
 
                 {/* Monthly Returns Heatmap */}
                 <MonthlyReturnsHeatmap
                   trades={activeReport.trades}
                   initialDeposit={activeReport.metrics.initialDeposit}
-                  currency={activeReport.accountInfo.currency}
+                  currency={activeReport.type === 'trade-history' ? activeReport.accountInfo.currency : 'USD'}
                 />
 
                 {/* Magic Number Breakdown */}
                 <MagicNumberBreakdown
                   trades={activeReport.trades}
-                  currency={activeReport.accountInfo.currency}
+                  currency={activeReport.type === 'trade-history' ? activeReport.accountInfo.currency : 'USD'}
                 />
               </TabsContent>
 
@@ -431,7 +448,7 @@ export function DashboardPage() {
               <TabsContent value="trades" className="mt-6">
                 <TradesTable
                   trades={activeReport.trades}
-                  currency={activeReport.accountInfo.currency}
+                  currency={activeReport.type === 'trade-history' ? activeReport.accountInfo.currency : 'USD'}
                 />
               </TabsContent>
             </Tabs>

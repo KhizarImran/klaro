@@ -1,11 +1,11 @@
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { FileText, Trash2, X, Upload } from 'lucide-react'
-import type { MT5Report } from '@/types/mt5'
+import { FileText, Trash2, X, Upload, TrendingUp, Zap } from 'lucide-react'
+import type { AnyMT5Report } from '@/types/mt5'
 
 export interface SavedReport {
   id: string
-  report: MT5Report
+  report: AnyMT5Report
   savedAt: Date
   name: string
 }
@@ -102,13 +102,27 @@ export function ReportsSidebar({
                 <div className="space-y-2">
                   {/* Report Name */}
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-semibold text-sm truncate">
-                        {savedReport.name}
-                      </h3>
-                      <p className="text-[oklch(65%_0.01_240)] text-xs truncate">
-                        {savedReport.report.accountInfo.accountNumber}
-                      </p>
+                    <div className="flex items-start gap-2 flex-1 min-w-0">
+                      {savedReport.report.type === 'trade-history' ? (
+                        <TrendingUp className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      ) : savedReport.report.type === 'backtest' ? (
+                        <Zap className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                      ) : (
+                        <FileText className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-white font-semibold text-sm truncate">
+                          {savedReport.name}
+                        </h3>
+                        <p className="text-[oklch(65%_0.01_240)] text-xs truncate">
+                          {savedReport.report.type === 'trade-history'
+                            ? savedReport.report.accountInfo.accountNumber
+                            : savedReport.report.type === 'backtest'
+                              ? `${savedReport.report.settings.symbol} • ${savedReport.report.settings.period}`
+                              : 'MT5 Report'
+                          }
+                        </p>
+                      </div>
                     </div>
                     <Button
                       variant="ghost"

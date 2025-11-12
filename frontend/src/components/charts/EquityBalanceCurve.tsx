@@ -153,7 +153,8 @@ export function EquityBalanceCurve({ trades, initialDeposit, currency = 'USD' }:
                 borderRadius: '6px',
                 color: 'white',
               }}
-              labelStyle={{ color: 'oklch(65% 0.01 240)' }}
+              labelStyle={{ color: 'white' }}
+              itemStyle={{ color: 'white' }}
               formatter={(value: number) => [`${value.toFixed(2)} ${currency}`, '']}
             />
             <Legend

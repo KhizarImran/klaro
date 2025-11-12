@@ -1,4 +1,4 @@
-import type { MT5Report } from '@/types/mt5'
+import type { AnyMT5Report } from '@/types/mt5'
 import type { SavedReport } from '@/components/dashboard/ReportsSidebar'
 
 const STORAGE_KEY_PREFIX = 'klaro_saved_reports'
@@ -12,18 +12,26 @@ function getUserActiveReportKey(userId: string): string {
   return `${ACTIVE_REPORT_KEY_PREFIX}_${userId}`
 }
 
-export function saveReport(report: MT5Report, userId: string): SavedReport {
+export function saveReport(report: AnyMT5Report, userId: string): SavedReport {
   const reports = loadReports(userId)
 
   // Generate unique ID
   const id = `report_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+  // Generate name based on report type
+  let name: string
+  if (report.type === 'trade-history') {
+    name = `${report.accountInfo.name} - ${new Date(report.uploadedAt || new Date()).toLocaleDateString()}`
+  } else {
+    name = `${report.settings.expert} (${report.settings.symbol}) - ${new Date(report.uploadedAt || new Date()).toLocaleDateString()}`
+  }
 
   // Create saved report
   const savedReport: SavedReport = {
     id,
     report,
     savedAt: new Date(),
-    name: `${report.accountInfo.name} - ${new Date(report.uploadedAt || new Date()).toLocaleDateString()}`,
+    name,
   }
 
   // Add to reports array
@@ -47,26 +55,34 @@ export function loadReports(userId: string): SavedReport[] {
 
     const reports = JSON.parse(stored)
 
-    // Restore Date objects
-    return reports.map((report: any) => ({
-      ...report,
-      savedAt: new Date(report.savedAt),
-      report: {
-        ...report.report,
-        uploadedAt: report.report.uploadedAt ? new Date(report.report.uploadedAt) : undefined,
-        reportPeriodStart: report.report.reportPeriodStart ? new Date(report.report.reportPeriodStart) : undefined,
-        reportPeriodEnd: report.report.reportPeriodEnd ? new Date(report.report.reportPeriodEnd) : undefined,
-        accountInfo: {
-          ...report.report.accountInfo,
-          reportDate: new Date(report.report.accountInfo.reportDate),
+    // Restore Date objects based on report type
+    return reports.map((savedReport: any) => {
+      const baseReport = {
+        ...savedReport,
+        savedAt: new Date(savedReport.savedAt),
+        report: {
+          ...savedReport.report,
+          uploadedAt: savedReport.report.uploadedAt ? new Date(savedReport.report.uploadedAt) : undefined,
+          reportPeriodStart: savedReport.report.reportPeriodStart ? new Date(savedReport.report.reportPeriodStart) : undefined,
+          reportPeriodEnd: savedReport.report.reportPeriodEnd ? new Date(savedReport.report.reportPeriodEnd) : undefined,
+          trades: savedReport.report.trades.map((trade: any) => ({
+            ...trade,
+            openTime: new Date(trade.openTime),
+            closeTime: new Date(trade.closeTime),
+          })),
         },
-        trades: report.report.trades.map((trade: any) => ({
-          ...trade,
-          openTime: new Date(trade.openTime),
-          closeTime: new Date(trade.closeTime),
-        })),
-      },
-    }))
+      }
+
+      // For trade-history reports, restore accountInfo.reportDate
+      if (savedReport.report.type === 'trade-history') {
+        baseReport.report.accountInfo = {
+          ...savedReport.report.accountInfo,
+          reportDate: new Date(savedReport.report.accountInfo.reportDate),
+        }
+      }
+
+      return baseReport
+    })
   } catch (error) {
     console.error('Failed to load reports from localStorage:', error)
     return []

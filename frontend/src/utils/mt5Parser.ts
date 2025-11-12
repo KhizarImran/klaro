@@ -26,6 +26,7 @@ export function parseMT5Report(htmlContent: string): ParsedMT5Data {
       : undefined
 
     const report: MT5Report = {
+      type: 'trade-history',
       accountInfo,
       trades,
       metrics,

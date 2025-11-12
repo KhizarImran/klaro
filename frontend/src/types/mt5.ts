@@ -92,6 +92,7 @@ export interface MT5PerformanceMetrics {
 export interface MT5Report {
   id?: string
   userId?: string
+  type: 'trade-history'
   accountInfo: MT5AccountInfo
   trades: MT5Trade[]
   metrics: MT5PerformanceMetrics
@@ -103,5 +104,72 @@ export interface MT5Report {
 export interface ParsedMT5Data {
   success: boolean
   report?: MT5Report
+  error?: string
+}
+
+// Backtest-specific types
+export interface MT5BacktestSettings {
+  expert: string
+  symbol: string
+  period: string
+  inputs: Record<string, string | number | boolean>
+  broker: string
+  build: string
+}
+
+export interface MT5BacktestTrade extends MT5Trade {
+  ticket: number
+  direction: 'in' | 'out'
+  order: number
+  balance: number // Running balance after trade
+}
+
+export interface MT5BacktestMetrics extends MT5PerformanceMetrics {
+  // Additional backtest-specific metrics
+  bars: number
+  ticks: number
+  symbols: number
+  equityDrawdownAbsolute: number
+  equityDrawdownMaximal: number
+  equityDrawdownMaximalPercent: number
+  equityDrawdownRelative: number
+  equityDrawdownRelativePercent: number
+  marginLevel: number
+  zScore: number
+  zScorePercent: number
+  ahpr: number
+  ahprPercent: number
+  ghpr: number
+  ghprPercent: number
+  lrCorrelation: number
+  lrStandardError: number
+  correlationProfitsMFE: number
+  correlationProfitsMAE: number
+  correlationMFEMAE: number
+  minPositionHoldingTime: string
+  maxPositionHoldingTime: string
+  avgPositionHoldingTime: string
+  totalDeals: number
+  onTesterResult: number
+}
+
+export interface MT5BacktestReport {
+  id?: string
+  userId?: string
+  type: 'backtest'
+  settings: MT5BacktestSettings
+  trades: MT5BacktestTrade[]
+  metrics: MT5BacktestMetrics
+  uploadedAt?: Date
+  reportPeriodStart?: Date
+  reportPeriodEnd?: Date
+}
+
+// Union type for all report types
+export type AnyMT5Report = MT5Report | MT5BacktestReport
+
+export interface ParsedMT5BacktestData {
+  success: boolean
+  report?: MT5BacktestReport
   error?: string
 }

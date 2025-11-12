@@ -122,7 +122,8 @@ export function MagicNumberBreakdown({ trades, currency = 'USD' }: MagicNumberBr
                 borderRadius: '6px',
                 color: 'white',
               }}
-              labelStyle={{ color: 'oklch(65% 0.01 240)' }}
+              labelStyle={{ color: 'white' }}
+              itemStyle={{ color: 'white' }}
               formatter={(value: number, name: string) => {
                 if (name === 'profit') return [`${value.toFixed(2)} ${currency}`, 'Net Profit']
                 if (name === 'trades') return [value, 'Total Trades']
