@@ -28,7 +28,7 @@ export function EquityBalanceCurve({ trades, initialDeposit, currency = 'USD' }:
 
     // Add initial point
     data.push({
-      date: sortedTrades[0].openTime.toLocaleDateString(),
+      date: sortedTrades[0].openTime.toLocaleDateString('en-GB'),
       timestamp: sortedTrades[0].openTime.getTime(),
       balance: initialDeposit,
       equity: initialDeposit,
@@ -40,7 +40,7 @@ export function EquityBalanceCurve({ trades, initialDeposit, currency = 'USD' }:
       runningBalance += trade.profit + trade.commission + trade.swap
 
       data.push({
-        date: trade.closeTime.toLocaleDateString(),
+        date: trade.closeTime.toLocaleDateString('en-GB'),
         timestamp: trade.closeTime.getTime(),
         balance: runningBalance,
         equity: runningBalance, // In closed trades, equity = balance

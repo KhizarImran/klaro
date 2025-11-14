@@ -512,16 +512,8 @@ function parseMetrics(data: any[][], trades: MT5Trade[]): MT5PerformanceMetrics 
 function parseDateTime(dateStr: string): Date | null {
   if (!dateStr) return null
 
-  // Try Excel serial date format first (number)
-  const asNumber = parseFloat(dateStr)
-  if (!isNaN(asNumber) && asNumber > 1) {
-    // Excel date serial number (days since 1900-01-01)
-    const excelEpoch = new Date(1900, 0, 1)
-    const msPerDay = 24 * 60 * 60 * 1000
-    // Excel incorrectly treats 1900 as a leap year, so we need to subtract 2 days
-    const date = new Date(excelEpoch.getTime() + (asNumber - 2) * msPerDay)
-    if (!isNaN(date.getTime())) return date
-  }
+  // Try string date formats FIRST (before numeric parsing)
+  // This prevents "2025.11.12" from being parsed as 2025.11 (Excel serial)
 
   // Try format: "2025.11.14 23:49" or "2025.11.12 06:05:07"
   let match = dateStr.match(/(\d{4})\.(\d{2})\.(\d{2})\s+(\d{2}):(\d{2})(?::(\d{2}))?/)
@@ -563,6 +555,20 @@ function parseDateTime(dateStr: string): Date | null {
       parseInt(minute),
       second ? parseInt(second) : 0
     )
+  }
+
+  // Try Excel serial date format LAST (only if it's a pure number)
+  // Only use this if the string doesn't contain date separators
+  if (!/[.\/\-:]/.test(dateStr)) {
+    const asNumber = parseFloat(dateStr)
+    if (!isNaN(asNumber) && asNumber > 1 && asNumber < 100000) {
+      // Excel date serial number (days since 1900-01-01)
+      const excelEpoch = new Date(1900, 0, 1)
+      const msPerDay = 24 * 60 * 60 * 1000
+      // Excel incorrectly treats 1900 as a leap year, so we need to subtract 2 days
+      const date = new Date(excelEpoch.getTime() + (asNumber - 2) * msPerDay)
+      if (!isNaN(date.getTime())) return date
+    }
   }
 
   return null

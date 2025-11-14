@@ -1,6 +1,9 @@
 import { useMemo } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { TrendingUp, TrendingDown, Target, Award, AlertTriangle } from 'lucide-react'
 import type { MT5Trade } from '@/types/mt5'
 
 interface MagicNumberBreakdownProps {
@@ -93,11 +96,159 @@ export function MagicNumberBreakdown({ trades, currency = 'USD' }: MagicNumberBr
     )
   }
 
+  // Single strategy view - enhanced card layout
+  if (magicNumberStats.length === 1) {
+    const stat = magicNumberStats[0]
+    const formatCurrency = (value: number) => {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(value)
+    }
+
+    return (
+      <Card className="border-[oklch(25%_0.01_240)] bg-[oklch(14%_0.01_240)]">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-white">Strategy Performance</CardTitle>
+              <CardDescription>Detailed analysis for {String(stat.magicNumber)}</CardDescription>
+            </div>
+            <Badge
+              variant={stat.netProfit >= 0 ? "default" : "destructive"}
+              className={stat.netProfit >= 0 ? "bg-emerald-500 hover:bg-emerald-600" : ""}
+            >
+              {stat.netProfit >= 0 ? '+' : ''}{formatCurrency(stat.netProfit)}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Key Metrics Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {/* Win Rate Card */}
+            <div className="bg-[oklch(18%_0.01_240)] rounded-lg p-4 border border-[oklch(25%_0.01_240)]">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-[oklch(65%_0.01_240)]">Win Rate</span>
+                <Target className={`h-4 w-4 ${stat.winRate >= 50 ? 'text-emerald-500' : 'text-red-500'}`} />
+              </div>
+              <div className="text-2xl font-bold text-white mb-2">
+                {stat.winRate.toFixed(1)}%
+              </div>
+              <Progress
+                value={stat.winRate}
+                className="h-2"
+              />
+              <div className="mt-2 text-xs text-[oklch(65%_0.01_240)]">
+                {stat.winningTrades}W / {stat.losingTrades}L of {stat.totalTrades} trades
+              </div>
+            </div>
+
+            {/* Profit Factor Card */}
+            <div className="bg-[oklch(18%_0.01_240)] rounded-lg p-4 border border-[oklch(25%_0.01_240)]">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-[oklch(65%_0.01_240)]">Profit Factor</span>
+                <Award className={`h-4 w-4 ${stat.profitFactor >= 1.5 ? 'text-emerald-500' : 'text-amber-500'}`} />
+              </div>
+              <div className="text-2xl font-bold text-white mb-2">
+                {stat.profitFactor === Infinity ? '∞' : stat.profitFactor.toFixed(2)}
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <div className="flex-1">
+                  <div className="text-[oklch(65%_0.01_240)]">Gross Profit</div>
+                  <div className="text-emerald-500 font-semibold">{formatCurrency(stat.totalProfit)}</div>
+                </div>
+                <div className="text-[oklch(45%_0.01_240)]">vs</div>
+                <div className="flex-1 text-right">
+                  <div className="text-[oklch(65%_0.01_240)]">Gross Loss</div>
+                  <div className="text-red-500 font-semibold">{formatCurrency(stat.totalLoss)}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Average Trade Card */}
+            <div className="bg-[oklch(18%_0.01_240)] rounded-lg p-4 border border-[oklch(25%_0.01_240)]">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-[oklch(65%_0.01_240)]">Average Trade</span>
+                {stat.netProfit >= 0 ? (
+                  <TrendingUp className="h-4 w-4 text-emerald-500" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 text-red-500" />
+                )}
+              </div>
+              <div className="text-2xl font-bold text-white mb-2">
+                {formatCurrency(stat.netProfit / stat.totalTrades)}
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <div className="flex-1">
+                  <div className="text-[oklch(65%_0.01_240)]">Avg Win</div>
+                  <div className="text-emerald-500 font-semibold">{formatCurrency(stat.avgWin)}</div>
+                </div>
+                <div className="text-[oklch(45%_0.01_240)]">/</div>
+                <div className="flex-1 text-right">
+                  <div className="text-[oklch(65%_0.01_240)]">Avg Loss</div>
+                  <div className="text-red-500 font-semibold">{formatCurrency(stat.avgLoss)}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Profit/Loss Distribution */}
+          <div className="bg-[oklch(18%_0.01_240)] rounded-lg p-4 border border-[oklch(25%_0.01_240)]">
+            <h4 className="text-sm font-semibold text-white mb-3">Profit/Loss Distribution</h4>
+            <div className="space-y-3">
+              <div>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="text-[oklch(65%_0.01_240)]">Winning Trades</span>
+                  <span className="text-emerald-500 font-semibold">
+                    {stat.winningTrades} trades ({((stat.winningTrades / stat.totalTrades) * 100).toFixed(1)}%)
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Progress
+                    value={(stat.winningTrades / stat.totalTrades) * 100}
+                    className="h-2 flex-1"
+                  />
+                  <span className="text-emerald-500 text-xs font-semibold min-w-[80px] text-right">
+                    {formatCurrency(stat.totalProfit)}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="text-[oklch(65%_0.01_240)]">Losing Trades</span>
+                  <span className="text-red-500 font-semibold">
+                    {stat.losingTrades} trades ({((stat.losingTrades / stat.totalTrades) * 100).toFixed(1)}%)
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Progress
+                    value={(stat.losingTrades / stat.totalTrades) * 100}
+                    className="h-2 flex-1 [&>div]:bg-red-500"
+                  />
+                  <span className="text-red-500 text-xs font-semibold min-w-[80px] text-right">
+                    {formatCurrency(stat.totalLoss)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 p-3 bg-[oklch(18%_0.01_240)] rounded text-xs text-[oklch(65%_0.01_240)]">
+            <p><strong>Strategy:</strong> {String(stat.magicNumber)} • All {stat.totalTrades} trades from this account use this strategy</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Multiple strategies view - bar chart + table
   return (
     <Card className="border-[oklch(25%_0.01_240)] bg-[oklch(14%_0.01_240)]">
       <CardHeader>
         <CardTitle className="text-white">Strategy Breakdown</CardTitle>
-        <CardDescription>Performance analysis by trading strategy</CardDescription>
+        <CardDescription>Performance comparison across {magicNumberStats.length} strategies</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
