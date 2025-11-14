@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { TrendingUp, Wallet, Target, TrendingDown, Award, AlertTriangle, BarChart3, List, Menu, Upload } from 'lucide-react'
+import { TrendingUp, Wallet, Target, TrendingDown, Award, AlertTriangle, BarChart3, List, Menu, Upload, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { ReportUpload } from '@/components/dashboard/ReportUpload'
 import { MetricCard } from '@/components/dashboard/MetricCard'
@@ -11,7 +11,12 @@ import { ReportsSidebar, type SavedReport } from '@/components/dashboard/Reports
 import { EquityBalanceCurve } from '@/components/charts/EquityBalanceCurve'
 import { MonthlyReturnsHeatmap } from '@/components/charts/MonthlyReturnsHeatmap'
 import { MagicNumberBreakdown } from '@/components/charts/MagicNumberBreakdown'
-import type { AnyMT5Report } from '@/types/mt5'
+import type { AnyMT5Report, MT5Trade } from '@/types/mt5'
+
+export interface SelectedMonth {
+  year: number
+  month: number
+}
 import { calculateDerivedMetrics } from '@/utils/mt5Parser'
 import { loadReports, saveReport, deleteReport, getActiveReportId, setActiveReportId, getReportById } from '@/utils/reportStorage'
 
@@ -22,6 +27,7 @@ export function DashboardPage() {
   const [activeReportId, setActiveReportIdState] = useState<string | null>(null)
   const [showUpload, setShowUpload] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [selectedMonths, setSelectedMonths] = useState<SelectedMonth[]>([])
 
   // Load saved reports on mount
   useEffect(() => {
@@ -95,6 +101,85 @@ export function DashboardPage() {
   }
 
   const activeReport = activeReportId && user?.id ? getReportById(activeReportId, user.id)?.report : null
+
+  // Handle month selection from heatmap
+  const handleMonthSelect = (year: number, month: number) => {
+    setSelectedMonths(prev => {
+      const exists = prev.some(m => m.year === year && m.month === month)
+      if (exists) {
+        // Remove if already selected
+        return prev.filter(m => !(m.year === year && m.month === month))
+      } else {
+        // Add to selection
+        return [...prev, { year, month }]
+      }
+    })
+  }
+
+  const handleClearSelection = () => {
+    setSelectedMonths([])
+  }
+
+  // Filter trades by selected months
+  const filteredTrades = useMemo(() => {
+    if (!activeReport || selectedMonths.length === 0) {
+      return activeReport?.trades as MT5Trade[] || []
+    }
+
+    const trades = activeReport.trades as MT5Trade[]
+    return trades.filter(trade => {
+      const year = trade.closeTime.getFullYear()
+      const month = trade.closeTime.getMonth()
+      return selectedMonths.some(sm => sm.year === year && sm.month === month)
+    })
+  }, [activeReport, selectedMonths])
+
+  // Recalculate metrics based on filtered trades
+  const filteredMetrics = useMemo(() => {
+    if (!activeReport || selectedMonths.length === 0 || filteredTrades.length === 0) {
+      return activeReport?.metrics
+    }
+
+    // Calculate metrics from filtered trades
+    const winningTrades = filteredTrades.filter(t => t.profit > 0)
+    const losingTrades = filteredTrades.filter(t => t.profit < 0)
+
+    const totalProfit = winningTrades.reduce((sum, t) => sum + t.profit + t.commission + t.swap, 0)
+    const totalLoss = Math.abs(losingTrades.reduce((sum, t) => sum + t.profit + t.commission + t.swap, 0))
+    const totalNetProfit = filteredTrades.reduce((sum, t) => sum + t.profit + t.commission + t.swap, 0)
+
+    const profitFactor = totalLoss > 0 ? totalProfit / totalLoss : totalProfit > 0 ? Infinity : 0
+    const expectedPayoff = filteredTrades.length > 0 ? totalNetProfit / filteredTrades.length : 0
+
+    const longTrades = filteredTrades.filter(t => t.type === 'buy')
+    const shortTrades = filteredTrades.filter(t => t.type === 'sell')
+    const longWins = longTrades.filter(t => t.profit > 0)
+    const shortWins = shortTrades.filter(t => t.profit > 0)
+
+    return {
+      ...activeReport.metrics,
+      totalTrades: filteredTrades.length,
+      totalNetProfit,
+      grossProfit: totalProfit,
+      grossLoss: totalLoss,
+      profitFactor,
+      expectedPayoff,
+      profitTrades: winningTrades.length,
+      profitTradesPercent: filteredTrades.length > 0 ? (winningTrades.length / filteredTrades.length) * 100 : 0,
+      lossTrades: losingTrades.length,
+      lossTradesPercent: filteredTrades.length > 0 ? (losingTrades.length / filteredTrades.length) * 100 : 0,
+      longTrades: longTrades.length,
+      longTradesWon: longWins.length,
+      longTradesWonPercent: longTrades.length > 0 ? (longWins.length / longTrades.length) * 100 : 0,
+      shortTrades: shortTrades.length,
+      shortTradesWon: shortWins.length,
+      shortTradesWonPercent: shortTrades.length > 0 ? (shortWins.length / shortTrades.length) * 100 : 0,
+      largestProfitTrade: winningTrades.length > 0 ? Math.max(...winningTrades.map(t => t.profit + t.commission + t.swap)) : 0,
+      largestLossTrade: losingTrades.length > 0 ? Math.min(...losingTrades.map(t => t.profit + t.commission + t.swap)) : 0,
+      averageProfitTrade: winningTrades.length > 0 ? totalProfit / winningTrades.length : 0,
+      averageLossTrade: losingTrades.length > 0 ? totalLoss / losingTrades.length : 0,
+    }
+  }, [activeReport, filteredTrades, selectedMonths])
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -240,6 +325,34 @@ export function DashboardPage() {
               </div>
             </div>
 
+            {/* Month Selection Indicator */}
+            {selectedMonths.length > 0 && (
+              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-sm font-semibold text-white">
+                        Filtering by {selectedMonths.length} selected month{selectedMonths.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <span className="text-xs text-[oklch(65%_0.01_240)]">
+                      Showing {filteredTrades.length} of {activeReport.trades.length} trades
+                    </span>
+                  </div>
+                  <Button
+                    onClick={handleClearSelection}
+                    variant="ghost"
+                    size="sm"
+                    className="text-emerald-500 hover:text-white hover:bg-emerald-500/20"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Clear Filter
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Tabs Navigation */}
             <Tabs defaultValue="overview" className="w-full">
               <TabsList className="grid w-full grid-cols-3 bg-[oklch(14%_0.01_240)] border border-[oklch(25%_0.01_240)]">
@@ -263,7 +376,7 @@ export function DashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                   <MetricCard
                     title="Balance"
-                    value={formatCurrency(activeReport.metrics.balance)}
+                    value={formatCurrency(filteredMetrics?.balance)}
                     subtitle={`Deposit: ${formatCurrency(activeReport.metrics.initialDeposit)}`}
                     icon={Wallet}
                     trend="neutral"
@@ -271,34 +384,34 @@ export function DashboardPage() {
 
                   <MetricCard
                     title="Equity"
-                    value={formatCurrency(activeReport.metrics.equity)}
-                    subtitle={`Margin: ${formatCurrency(activeReport.metrics.margin)}`}
+                    value={formatCurrency(filteredMetrics?.equity)}
+                    subtitle={`Margin: ${formatCurrency(filteredMetrics?.margin)}`}
                     icon={TrendingUp}
                     trend="neutral"
                   />
 
                   <MetricCard
                     title="Net P/L"
-                    value={formatCurrency(activeReport.metrics.totalNetProfit)}
+                    value={formatCurrency(filteredMetrics?.totalNetProfit)}
                     subtitle={derived ? `ROI: ${formatPercent(derived.roi)}` : undefined}
                     icon={TrendingDown}
-                    trend={activeReport.metrics.totalNetProfit >= 0 ? 'positive' : 'negative'}
+                    trend={filteredMetrics?.totalNetProfit >= 0 ? 'positive' : 'negative'}
                   />
 
                   <MetricCard
                     title="Win Rate"
-                    value={formatPercent(activeReport.metrics.profitTradesPercent)}
-                    subtitle={`${activeReport.metrics.profitTrades}W / ${activeReport.metrics.lossTrades}L`}
+                    value={formatPercent(filteredMetrics?.profitTradesPercent)}
+                    subtitle={`${filteredMetrics?.profitTrades}W / ${filteredMetrics?.lossTrades}L`}
                     icon={Target}
-                    trend={activeReport.metrics.profitTradesPercent >= 50 ? 'positive' : 'negative'}
+                    trend={filteredMetrics?.profitTradesPercent >= 50 ? 'positive' : 'negative'}
                   />
 
                   <MetricCard
                     title="Max Drawdown"
-                    value={formatPercent(activeReport.metrics.balanceDrawdownMaximalPercent)}
-                    subtitle={`${formatCurrency(activeReport.metrics.balanceDrawdownMaximal)} max`}
+                    value={formatPercent(filteredMetrics?.balanceDrawdownMaximalPercent)}
+                    subtitle={`${formatCurrency(filteredMetrics?.balanceDrawdownMaximal)} max`}
                     icon={AlertTriangle}
-                    trend={activeReport.metrics.balanceDrawdownMaximalPercent < 10 ? 'positive' : 'negative'}
+                    trend={filteredMetrics?.balanceDrawdownMaximalPercent < 10 ? 'positive' : 'negative'}
                   />
                 </div>
 
@@ -314,48 +427,48 @@ export function DashboardPage() {
                     <div className="space-y-4">
                       <div className="flex justify-between items-center pb-3 border-b border-[oklch(20%_0.01_240)]">
                         <span className="text-[oklch(65%_0.01_240)]">Total Trades</span>
-                        <span className="text-white font-semibold">{activeReport.metrics.totalTrades}</span>
+                        <span className="text-white font-semibold">{filteredMetrics?.totalTrades}</span>
                       </div>
 
                       <div className="flex justify-between items-center pb-3 border-b border-[oklch(20%_0.01_240)]">
                         <span className="text-[oklch(65%_0.01_240)]">Long Trades (won %)</span>
                         <span className="text-white font-semibold">
-                          {activeReport.metrics.longTrades} ({activeReport.metrics.longTradesWonPercent.toFixed(1)}%)
+                          {filteredMetrics?.longTrades || 0} ({(filteredMetrics?.longTradesWonPercent || 0).toFixed(1)}%)
                         </span>
                       </div>
 
                       <div className="flex justify-between items-center pb-3 border-b border-[oklch(20%_0.01_240)]">
                         <span className="text-[oklch(65%_0.01_240)]">Short Trades (won %)</span>
                         <span className="text-white font-semibold">
-                          {activeReport.metrics.shortTrades} ({activeReport.metrics.shortTradesWonPercent.toFixed(1)}%)
+                          {filteredMetrics?.shortTrades || 0} ({(filteredMetrics?.shortTradesWonPercent || 0).toFixed(1)}%)
                         </span>
                       </div>
 
                       <div className="flex justify-between items-center pb-3 border-b border-[oklch(20%_0.01_240)]">
                         <span className="text-[oklch(65%_0.01_240)]">Largest Win</span>
                         <span className="text-emerald-500 font-semibold">
-                          {formatCurrency(activeReport.metrics.largestProfitTrade)}
+                          {formatCurrency(filteredMetrics?.largestProfitTrade)}
                         </span>
                       </div>
 
                       <div className="flex justify-between items-center pb-3 border-b border-[oklch(20%_0.01_240)]">
                         <span className="text-[oklch(65%_0.01_240)]">Largest Loss</span>
                         <span className="text-red-500 font-semibold">
-                          {formatCurrency(activeReport.metrics.largestLossTrade)}
+                          {formatCurrency(filteredMetrics?.largestLossTrade)}
                         </span>
                       </div>
 
                       <div className="flex justify-between items-center pb-3 border-b border-[oklch(20%_0.01_240)]">
                         <span className="text-[oklch(65%_0.01_240)]">Average Win</span>
                         <span className="text-emerald-500 font-semibold">
-                          {formatCurrency(activeReport.metrics.averageProfitTrade)}
+                          {formatCurrency(filteredMetrics?.averageProfitTrade)}
                         </span>
                       </div>
 
                       <div className="flex justify-between items-center">
                         <span className="text-[oklch(65%_0.01_240)]">Average Loss</span>
                         <span className="text-red-500 font-semibold">
-                          {formatCurrency(activeReport.metrics.averageLossTrade)}
+                          {formatCurrency(filteredMetrics?.averageLossTrade)}
                         </span>
                       </div>
                     </div>
@@ -371,50 +484,50 @@ export function DashboardPage() {
                     <div className="space-y-4">
                       <div className="flex justify-between items-center pb-3 border-b border-[oklch(20%_0.01_240)]">
                         <span className="text-[oklch(65%_0.01_240)]">Profit Factor</span>
-                        <span className={`font-semibold ${activeReport.metrics.profitFactor >= 1.5 ? 'text-emerald-500' : 'text-red-500'}`}>
-                          {activeReport.metrics.profitFactor.toFixed(2)}
+                        <span className={`font-semibold ${(filteredMetrics?.profitFactor || 0) >= 1.5 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          {(filteredMetrics?.profitFactor || 0).toFixed(2)}
                         </span>
                       </div>
 
                       <div className="flex justify-between items-center pb-3 border-b border-[oklch(20%_0.01_240)]">
                         <span className="text-[oklch(65%_0.01_240)]">Sharpe Ratio</span>
-                        <span className={`font-semibold ${activeReport.metrics.sharpeRatio >= 1 ? 'text-emerald-500' : 'text-red-500'}`}>
-                          {activeReport.metrics.sharpeRatio.toFixed(2)}
+                        <span className={`font-semibold ${(filteredMetrics?.sharpeRatio || 0) >= 1 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          {(filteredMetrics?.sharpeRatio || 0).toFixed(2)}
                         </span>
                       </div>
 
                       <div className="flex justify-between items-center pb-3 border-b border-[oklch(20%_0.01_240)]">
                         <span className="text-[oklch(65%_0.01_240)]">Recovery Factor</span>
-                        <span className={`font-semibold ${activeReport.metrics.recoveryFactor >= 2 ? 'text-emerald-500' : 'text-red-500'}`}>
-                          {activeReport.metrics.recoveryFactor.toFixed(2)}
+                        <span className={`font-semibold ${(filteredMetrics?.recoveryFactor || 0) >= 2 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          {(filteredMetrics?.recoveryFactor || 0).toFixed(2)}
                         </span>
                       </div>
 
                       <div className="flex justify-between items-center pb-3 border-b border-[oklch(20%_0.01_240)]">
                         <span className="text-[oklch(65%_0.01_240)]">Expected Payoff</span>
-                        <span className={`font-semibold ${activeReport.metrics.expectedPayoff >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                          {formatCurrency(activeReport.metrics.expectedPayoff)}
+                        <span className={`font-semibold ${filteredMetrics?.expectedPayoff >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          {formatCurrency(filteredMetrics?.expectedPayoff)}
                         </span>
                       </div>
 
                       <div className="flex justify-between items-center pb-3 border-b border-[oklch(20%_0.01_240)]">
                         <span className="text-[oklch(65%_0.01_240)]">Gross Profit</span>
                         <span className="text-emerald-500 font-semibold">
-                          {formatCurrency(activeReport.metrics.grossProfit)}
+                          {formatCurrency(filteredMetrics?.grossProfit)}
                         </span>
                       </div>
 
                       <div className="flex justify-between items-center pb-3 border-b border-[oklch(20%_0.01_240)]">
                         <span className="text-[oklch(65%_0.01_240)]">Gross Loss</span>
                         <span className="text-red-500 font-semibold">
-                          {formatCurrency(activeReport.metrics.grossLoss)}
+                          {formatCurrency(filteredMetrics?.grossLoss)}
                         </span>
                       </div>
 
                       <div className="flex justify-between items-center">
                         <span className="text-[oklch(65%_0.01_240)]">Max Consecutive Losses</span>
                         <span className="text-red-500 font-semibold">
-                          {activeReport.metrics.maxConsecutiveLosses} ({formatCurrency(activeReport.metrics.maxConsecutiveLossesMoney)})
+                          {filteredMetrics?.maxConsecutiveLosses} ({formatCurrency(filteredMetrics?.maxConsecutiveLossesMoney)})
                         </span>
                       </div>
                     </div>
@@ -426,21 +539,23 @@ export function DashboardPage() {
               <TabsContent value="charts" className="space-y-8 mt-6">
                 {/* Equity & Balance Curve */}
                 <EquityBalanceCurve
-                  trades={activeReport.trades}
+                  trades={filteredTrades}
                   initialDeposit={activeReport.metrics.initialDeposit}
                   currency={activeReport.type === 'trade-history' ? activeReport.accountInfo.currency : 'USD'}
                 />
 
                 {/* Monthly Returns Heatmap */}
                 <MonthlyReturnsHeatmap
-                  trades={activeReport.trades}
+                  trades={activeReport.trades as MT5Trade[]}
                   initialDeposit={activeReport.metrics.initialDeposit}
                   currency={activeReport.type === 'trade-history' ? activeReport.accountInfo.currency : 'USD'}
+                  selectedMonths={selectedMonths}
+                  onMonthSelect={handleMonthSelect}
                 />
 
                 {/* Magic Number Breakdown */}
                 <MagicNumberBreakdown
-                  trades={activeReport.trades}
+                  trades={filteredTrades}
                   currency={activeReport.type === 'trade-history' ? activeReport.accountInfo.currency : 'USD'}
                 />
               </TabsContent>
@@ -448,7 +563,7 @@ export function DashboardPage() {
               {/* Trades Tab */}
               <TabsContent value="trades" className="mt-6">
                 <TradesTable
-                  trades={activeReport.trades}
+                  trades={filteredTrades}
                   currency={activeReport.type === 'trade-history' ? activeReport.accountInfo.currency : 'USD'}
                 />
               </TabsContent>

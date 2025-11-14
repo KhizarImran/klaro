@@ -1,11 +1,14 @@
 import { useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { MT5Trade } from '@/types/mt5'
+import type { SelectedMonth } from '@/pages/DashboardPage'
 
 interface MonthlyReturnsHeatmapProps {
   trades: MT5Trade[]
   initialDeposit: number
   currency?: string
+  selectedMonths?: SelectedMonth[]
+  onMonthSelect?: (year: number, month: number) => void
 }
 
 interface MonthlyReturn {
@@ -19,7 +22,16 @@ interface MonthlyReturn {
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-export function MonthlyReturnsHeatmap({ trades, initialDeposit, currency = 'USD' }: MonthlyReturnsHeatmapProps) {
+export function MonthlyReturnsHeatmap({
+  trades,
+  initialDeposit,
+  currency = 'USD',
+  selectedMonths = [],
+  onMonthSelect
+}: MonthlyReturnsHeatmapProps) {
+  const isMonthSelected = (year: number, month: number) => {
+    return selectedMonths.some(sm => sm.year === year && sm.month === month)
+  }
   const monthlyData = useMemo(() => {
     if (!trades || trades.length === 0) return { returns: [], years: [] }
 
@@ -151,11 +163,18 @@ export function MonthlyReturnsHeatmap({ trades, initialDeposit, currency = 'USD'
                       )
                     }
 
+                    const isSelected = isMonthSelected(year, monthIndex)
+
                     return (
                       <td key={monthIndex} className="p-2">
                         <div
-                          className={`h-12 rounded flex flex-col items-center justify-center ${getColorForReturn(monthReturn.returnPercent)}`}
-                          title={`${monthReturn.monthName} ${year}: ${monthReturn.returnPercent.toFixed(2)}% (${monthReturn.profit >= 0 ? '+' : ''}${monthReturn.profit.toFixed(2)} ${currency})`}
+                          onClick={() => onMonthSelect?.(year, monthIndex)}
+                          className={`h-12 rounded flex flex-col items-center justify-center ${getColorForReturn(monthReturn.returnPercent)} ${
+                            onMonthSelect ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
+                          } ${
+                            isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-[oklch(14%_0.01_240)]' : ''
+                          }`}
+                          title={`${monthReturn.monthName} ${year}: ${monthReturn.returnPercent.toFixed(2)}% (${monthReturn.profit >= 0 ? '+' : ''}${monthReturn.profit.toFixed(2)} ${currency})${isSelected ? ' (Selected)' : ''}`}
                         >
                           <span className="text-xs font-semibold text-white">
                             {monthReturn.returnPercent >= 0 ? '+' : ''}{monthReturn.returnPercent.toFixed(1)}%
