@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { Upload, FileText, AlertCircle, CheckCircle2, TrendingUp, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { parseMT5Report } from '@/utils/mt5Parser'
+import { parseMT5ReportXLSX } from '@/utils/mt5ParserXLSX'
 import { parseMT5BacktestReportXLSX } from '@/utils/mt5BacktestParserXLSX'
 import type { MT5Report, MT5BacktestReport, AnyMT5Report } from '@/types/mt5'
 
@@ -24,42 +24,27 @@ export function ReportUpload({ onReportParsed }: ReportUploadProps) {
     setProcessingType(reportType)
 
     try {
-      // Parse the appropriate report type
-      if (reportType === 'trade-history') {
-        // Validate file type for trade history (HTML)
-        if (!file.name.endsWith('.html') && !file.name.endsWith('.htm')) {
-          throw new Error('Please upload an HTML file (.html or .htm)')
-        }
-
-        // Read file content as text
-        const content = await file.text()
-        const result = parseMT5Report(content)
-
-        if (!result.success || !result.report) {
-          throw new Error(result.error || 'Failed to parse MT5 Trade History report')
-        }
-        setSuccess(reportType)
-        setTimeout(() => {
-          onReportParsed(result.report!)
-        }, 500)
-      } else {
-        // Validate file type for backtest (XLSX)
-        if (!file.name.endsWith('.xlsx')) {
-          throw new Error('Please upload an Excel file (.xlsx)')
-        }
-
-        // Read file content as ArrayBuffer for XLSX
-        const buffer = await file.arrayBuffer()
-        const result = parseMT5BacktestReportXLSX(buffer)
-
-        if (!result.success || !result.report) {
-          throw new Error(result.error || 'Failed to parse MT5 Backtest report')
-        }
-        setSuccess(reportType)
-        setTimeout(() => {
-          onReportParsed(result.report!)
-        }, 500)
+      // Validate file type (XLSX only)
+      if (!file.name.endsWith('.xlsx')) {
+        throw new Error('Please upload an Excel file (.xlsx)')
       }
+
+      // Read file content as ArrayBuffer for XLSX
+      const buffer = await file.arrayBuffer()
+
+      // Parse based on report type
+      const result = reportType === 'trade-history'
+        ? parseMT5ReportXLSX(buffer)
+        : parseMT5BacktestReportXLSX(buffer)
+
+      if (!result.success || !result.report) {
+        throw new Error(result.error || `Failed to parse MT5 ${reportType === 'trade-history' ? 'Trade History' : 'Backtest'} report`)
+      }
+
+      setSuccess(reportType)
+      setTimeout(() => {
+        onReportParsed(result.report!)
+      }, 500)
 
     } catch (err) {
       setError({
@@ -225,17 +210,19 @@ export function ReportUpload({ onReportParsed }: ReportUploadProps) {
           tradeHistoryDragging,
           TrendingUp,
           'MT5 Trade History Report',
-          'Upload your live trading account history',
+          'Upload your live trading account history (Excel format)',
           {
             title: 'How to export from MT5:',
             steps: [
               'Open MetaTrader 5 terminal',
               'Go to "Toolbox" → "History" tab',
               'Right-click and choose "Save as Detailed Report"',
-              'Save the HTML file and upload it here',
+              'Save the HTML report, then open it in Excel',
+              'In Excel: File → Save As → Excel Workbook (.xlsx)',
+              'Upload the XLSX file here',
             ],
           },
-          '.html,.htm'
+          '.xlsx'
         )}
 
         {/* Backtest Report Upload */}
