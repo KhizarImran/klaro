@@ -17,7 +17,7 @@ export interface SelectedMonth {
   year: number
   month: number
 }
-import { calculateDerivedMetrics } from '@/utils/mt5Parser'
+import { calculateDerivedMetrics } from '@/utils/mt5Metrics'
 import { loadReports, saveReport, deleteReport, getActiveReportId, setActiveReportId, getReportById } from '@/utils/reportStorage'
 
 export function DashboardPage() {
@@ -200,24 +200,15 @@ export function DashboardPage() {
   return (
     <div className="min-h-screen bg-[oklch(10%_0.01_240)] text-white">
       {/* Sidebar */}
-      {sidebarOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/50 z-40"
-            onClick={() => setSidebarOpen(false)}
-          />
-          {/* Sidebar */}
-          <ReportsSidebar
-            reports={savedReports}
-            activeReportId={activeReportId}
-            onSelectReport={handleSelectReport}
-            onDeleteReport={handleDeleteReport}
-            onClose={() => setSidebarOpen(false)}
-            onUploadNew={handleUploadNew}
-          />
-        </>
-      )}
+      <ReportsSidebar
+        reports={savedReports}
+        activeReportId={activeReportId}
+        onSelectReport={handleSelectReport}
+        onDeleteReport={handleDeleteReport}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        onUploadNew={handleUploadNew}
+        isOpen={sidebarOpen}
+      />
 
       {/* Navigation */}
       <nav className="border-b border-[oklch(25%_0.01_240)] bg-[oklch(10%_0.01_240)]">
@@ -228,7 +219,7 @@ export function DashboardPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setSidebarOpen(true)}
+                onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="text-[oklch(65%_0.01_240)] hover:text-white hover:bg-[oklch(20%_0.01_240)]"
               >
                 <Menu className="h-5 w-5" />
@@ -314,7 +305,7 @@ export function DashboardPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
-                    onClick={() => setSidebarOpen(true)}
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
                     variant="outline"
                     className="border-[oklch(35%_0.01_240)] text-[oklch(65%_0.01_240)] hover:bg-[oklch(20%_0.01_240)]"
                   >

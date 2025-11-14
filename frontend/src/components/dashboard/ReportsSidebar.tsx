@@ -15,8 +15,9 @@ interface ReportsSidebarProps {
   activeReportId: string | null
   onSelectReport: (reportId: string) => void
   onDeleteReport: (reportId: string) => void
-  onClose: () => void
+  onToggle: () => void
   onUploadNew: () => void
+  isOpen: boolean
 }
 
 export function ReportsSidebar({
@@ -24,8 +25,9 @@ export function ReportsSidebar({
   activeReportId,
   onSelectReport,
   onDeleteReport,
-  onClose,
+  onToggle,
   onUploadNew,
+  isOpen,
 }: ReportsSidebarProps) {
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -47,7 +49,9 @@ export function ReportsSidebar({
   }
 
   return (
-    <div className="fixed inset-y-0 left-0 z-50 w-80 bg-[oklch(10%_0.01_240)] border-r border-[oklch(25%_0.01_240)] shadow-xl overflow-hidden flex flex-col">
+    <div className={`fixed inset-y-0 left-0 z-40 w-80 bg-[oklch(10%_0.01_240)] border-r border-[oklch(25%_0.01_240)] shadow-xl overflow-hidden flex flex-col transition-transform duration-300 ${
+      isOpen ? 'translate-x-0' : '-translate-x-full'
+    }`}>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-[oklch(25%_0.01_240)]">
         <h2 className="text-lg font-bold text-white flex items-center gap-2">
@@ -57,7 +61,7 @@ export function ReportsSidebar({
         <Button
           variant="ghost"
           size="sm"
-          onClick={onClose}
+          onClick={onToggle}
           className="text-[oklch(65%_0.01_240)] hover:text-white hover:bg-[oklch(20%_0.01_240)]"
         >
           <X className="h-5 w-5" />
