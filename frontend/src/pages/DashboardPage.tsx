@@ -12,6 +12,7 @@ import { EquityBalanceCurve } from '@/components/charts/EquityBalanceCurve'
 import { MonthlyReturnsHeatmap } from '@/components/charts/MonthlyReturnsHeatmap'
 import { MagicNumberBreakdown } from '@/components/charts/MagicNumberBreakdown'
 import type { AnyMT5Report, MT5Trade } from '@/types/mt5'
+import { useMigrateLocalStorage } from '@/hooks/useMigrateLocalStorage'
 
 export interface SelectedMonth {
   year: number
@@ -28,69 +29,101 @@ export function DashboardPage() {
   const [showUpload, setShowUpload] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [selectedMonths, setSelectedMonths] = useState<SelectedMonth[]>([])
+  const [loading, setLoading] = useState(true)
 
-  // Load saved reports on mount
+  // Auto-migrate from localStorage to Supabase
+  const migrationStatus = useMigrateLocalStorage(user?.id)
+
+  // Load saved reports on mount (wait for migration to complete)
   useEffect(() => {
     if (!user?.id) return // Wait for user to be loaded
+    if (migrationStatus.inProgress) return // Wait for migration to complete
 
-    const reports = loadReports(user.id)
-    setSavedReports(reports)
+    const loadData = async () => {
+      setLoading(true)
+      try {
+        const reports = await loadReports(user.id)
+        setSavedReports(reports)
 
-    const activeId = getActiveReportId(user.id)
-    if (activeId && reports.find(r => r.id === activeId)) {
-      setActiveReportIdState(activeId)
-      setShowUpload(false) // Ensure upload is hidden when loading saved report
-    } else if (reports.length > 0) {
-      // If no active report but reports exist, select the most recent
-      setActiveReportIdState(reports[reports.length - 1].id)
-      setShowUpload(false) // Ensure upload is hidden when auto-selecting report
-    } else {
-      // No reports, show upload
-      setShowUpload(true)
+        const activeId = await getActiveReportId(user.id)
+        if (activeId && reports.find(r => r.id === activeId)) {
+          setActiveReportIdState(activeId)
+          setShowUpload(false) // Ensure upload is hidden when loading saved report
+        } else if (reports.length > 0) {
+          // If no active report but reports exist, select the most recent
+          setActiveReportIdState(reports[reports.length - 1].id)
+          setShowUpload(false) // Ensure upload is hidden when auto-selecting report
+        } else {
+          // No reports, show upload
+          setShowUpload(true)
+        }
+      } catch (error) {
+        console.error('Failed to load reports:', error)
+        setShowUpload(true)
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [user?.id])
+
+    loadData()
+  }, [user?.id, migrationStatus.inProgress])
 
   const handleSignOut = async () => {
     await signOut()
     navigate('/')
   }
 
-  const handleReportParsed = (parsedReport: AnyMT5Report) => {
+  const handleReportParsed = async (parsedReport: AnyMT5Report) => {
     if (!user?.id) return
 
-    const savedReport = saveReport(parsedReport, user.id)
-    setSavedReports(loadReports(user.id))
-    setActiveReportIdState(savedReport.id)
-    setShowUpload(false)
-    setSidebarOpen(false)
+    try {
+      const savedReport = await saveReport(parsedReport, user.id)
+      const reports = await loadReports(user.id)
+      setSavedReports(reports)
+      setActiveReportIdState(savedReport.id)
+      setShowUpload(false)
+      setSidebarOpen(false)
+    } catch (error) {
+      console.error('Failed to save report:', error)
+      alert('Failed to save report. Please try again.')
+    }
   }
 
-  const handleSelectReport = (reportId: string) => {
+  const handleSelectReport = async (reportId: string) => {
     if (!user?.id) return
 
-    setActiveReportIdState(reportId)
-    setActiveReportId(reportId, user.id)
-    setShowUpload(false) // Hide upload screen when selecting a report
-    setSidebarOpen(false)
+    try {
+      setActiveReportIdState(reportId)
+      await setActiveReportId(reportId, user.id)
+      setShowUpload(false) // Hide upload screen when selecting a report
+      setSidebarOpen(false)
+    } catch (error) {
+      console.error('Failed to set active report:', error)
+    }
   }
 
-  const handleDeleteReport = (reportId: string) => {
+  const handleDeleteReport = async (reportId: string) => {
     if (!user?.id) return
 
     if (confirm('Are you sure you want to delete this report?')) {
-      deleteReport(reportId, user.id)
-      const updatedReports = loadReports(user.id)
-      setSavedReports(updatedReports)
+      try {
+        await deleteReport(reportId, user.id)
+        const updatedReports = await loadReports(user.id)
+        setSavedReports(updatedReports)
 
-      // If we deleted the active report, select another or show upload
-      if (reportId === activeReportId) {
-        if (updatedReports.length > 0) {
-          setActiveReportIdState(updatedReports[updatedReports.length - 1].id)
-          setActiveReportId(updatedReports[updatedReports.length - 1].id, user.id)
-        } else {
-          setActiveReportIdState(null)
-          setShowUpload(true)
+        // If we deleted the active report, select another or show upload
+        if (reportId === activeReportId) {
+          if (updatedReports.length > 0) {
+            setActiveReportIdState(updatedReports[updatedReports.length - 1].id)
+            await setActiveReportId(updatedReports[updatedReports.length - 1].id, user.id)
+          } else {
+            setActiveReportIdState(null)
+            setShowUpload(true)
+          }
         }
+      } catch (error) {
+        console.error('Failed to delete report:', error)
+        alert('Failed to delete report. Please try again.')
       }
     }
   }
@@ -100,7 +133,27 @@ export function DashboardPage() {
     setSidebarOpen(false)
   }
 
-  const activeReport = activeReportId && user?.id ? getReportById(activeReportId, user.id)?.report : null
+  const [activeReport, setActiveReport] = useState<AnyMT5Report | null>(null)
+
+  // Load active report when activeReportId changes
+  useEffect(() => {
+    if (!activeReportId || !user?.id) {
+      setActiveReport(null)
+      return
+    }
+
+    const loadActiveReport = async () => {
+      try {
+        const savedReport = await getReportById(activeReportId, user.id)
+        setActiveReport(savedReport?.report || null)
+      } catch (error) {
+        console.error('Failed to load active report:', error)
+        setActiveReport(null)
+      }
+    }
+
+    loadActiveReport()
+  }, [activeReportId, user?.id])
 
   // Handle month selection from heatmap
   const handleMonthSelect = (year: number, month: number) => {
@@ -275,7 +328,14 @@ export function DashboardPage() {
           </p>
         </div>
 
-        {showUpload || !activeReport ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-32">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-emerald-500 mx-auto mb-4"></div>
+              <p className="text-[oklch(65%_0.01_240)]">Loading reports...</p>
+            </div>
+          </div>
+        ) : showUpload || !activeReport ? (
           <ReportUpload onReportParsed={handleReportParsed} />
         ) : (
           <div className="space-y-8">
