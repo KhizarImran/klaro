@@ -76,6 +76,15 @@ const accountNumber = report.accountInfo.accountNumber  // Error if backtest!
 - Positions section detected by finding "Positions" row
 - Automatically detects column positions in header row
 - Handles second Time/Price columns for close time/price
+- **Magic Number extraction**: Detects and extracts magic number column when present in Positions section
+- **Strategy name extraction** (multi-source approach in priority order):
+  1. **Orders section lookup** (most reliable): Matches position number to order number, extracts EA name from order comment
+  2. **Positions comment field**: Parses strategy names using patterns:
+     - `[EA Name]` - square brackets
+     - `{EA Name}` - curly braces
+     - `EA_Name` - underscore-separated starting with capital letter
+     - Raw comment text (e.g., "RangeBO")
+  3. **Fallback**: undefined (will show as "Unknown" in UI)
 - Stops parsing at "Orders" or "Deals" section
 - Metrics extracted from "Results" section with exact row/column mapping
 - Initial deposit extracted from Deals section (balance entry)

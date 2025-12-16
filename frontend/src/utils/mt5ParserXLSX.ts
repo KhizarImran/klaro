@@ -117,8 +117,92 @@ function parseAccountInfo(data: any[][]): MT5AccountInfo {
   }
 }
 
+/**
+ * Parse Orders section to extract strategy names from comments
+ * Returns a map of order numbers to strategy names
+ */
+function parseOrderStrategies(data: any[][]): Map<string, string> {
+  const orderStrategyMap = new Map<string, string>()
+
+  // Find "Orders" section header
+  let ordersRowStart = -1
+  for (let i = 0; i < data.length; i++) {
+    const cell = data[i]?.[0]?.toString().trim() || ''
+    if (cell === 'Orders') {
+      ordersRowStart = i + 1 // Next row is the header row
+      break
+    }
+  }
+
+  if (ordersRowStart === -1) {
+    return orderStrategyMap
+  }
+
+  // Find where Orders section ends
+  let ordersRowEnd = data.length
+  for (let i = ordersRowStart + 1; i < data.length; i++) {
+    const cell = data[i]?.[0]?.toString().trim() || ''
+    if (cell === 'Deals' || cell === 'Summary') {
+      ordersRowEnd = i
+      break
+    }
+  }
+
+  // Parse header row to find Order and Comment columns
+  const headerRow = data[ordersRowStart]
+  let orderColIndex = -1
+  let commentColIndex = -1
+
+  headerRow.forEach((cell: any, index: number) => {
+    const header = cell?.toString().toLowerCase().trim() || ''
+    if (header === 'order') orderColIndex = index
+    if (header === 'comment') commentColIndex = index
+  })
+
+  if (orderColIndex === -1 || commentColIndex === -1) {
+    return orderStrategyMap
+  }
+
+  // Parse each order row and extract strategy from comment
+  for (let i = ordersRowStart + 1; i < ordersRowEnd; i++) {
+    const row = data[i]
+    if (!row || row.length < 5) continue
+
+    const orderNumber = row[orderColIndex]?.toString().trim()
+    const comment = row[commentColIndex]?.toString().trim() || ''
+
+    if (!orderNumber || !comment) continue
+
+    // Extract strategy name from comment using the same patterns
+    let strategy: string | undefined
+    const bracketMatch = comment.match(/\[([^\]]+)\]/)
+    const braceMatch = comment.match(/\{([^}]+)\}/)
+    const underscoreMatch = comment.match(/^([A-Z][A-Za-z0-9_]+)/)
+
+    if (bracketMatch) {
+      strategy = bracketMatch[1].trim()
+    } else if (braceMatch) {
+      strategy = braceMatch[1].trim()
+    } else if (underscoreMatch) {
+      strategy = underscoreMatch[1].trim()
+    } else {
+      // If no pattern matches, use the comment as-is (like "RangeBO")
+      strategy = comment
+    }
+
+    if (strategy) {
+      orderStrategyMap.set(orderNumber, strategy)
+    }
+  }
+
+  return orderStrategyMap
+}
+
 function parseTrades(data: any[][]): MT5Trade[] {
   const trades: MT5Trade[] = []
+
+  // First, parse the Orders section to build a map of order numbers to strategy names
+  const orderStrategyMap = parseOrderStrategies(data)
 
   // Find "Positions" section header
   let positionsRowStart = -1
@@ -165,6 +249,7 @@ function parseTrades(data: any[][]): MT5Trade[] {
     if (header.includes('swap')) colMap.swap = index
     if (header.includes('profit')) colMap.profit = index
     if (header.includes('comment')) colMap.comment = index
+    if (header.includes('magic')) colMap.magicNumber = index
   })
 
   // The close time and close price are in later columns (typically after the first Time/Price)
@@ -213,6 +298,38 @@ function parseTrades(data: any[][]): MT5Trade[] {
       const profit = parseFloat(row[colMap.profit] || 0)
       const comment = row[colMap.comment]?.toString() || ''
 
+      // Extract magic number if column exists
+      const magicNumberRaw = colMap.magicNumber !== undefined ? row[colMap.magicNumber] : undefined
+      const magicNumber = magicNumberRaw !== undefined && magicNumberRaw !== '' ? parseInt(magicNumberRaw.toString()) : undefined
+
+      // Extract strategy name - try multiple sources in priority order:
+      // 1. Look up position number in Orders section (most reliable)
+      // 2. Extract from comment column in Positions section
+      // 3. Fallback to undefined
+      let strategy: string | undefined
+
+      // Priority 1: Look up strategy from Orders section using position number
+      if (position && orderStrategyMap.has(position)) {
+        strategy = orderStrategyMap.get(position)
+      }
+      // Priority 2: Try to extract from comment column if it exists
+      else if (comment) {
+        const bracketMatch = comment.match(/\[([^\]]+)\]/)
+        const braceMatch = comment.match(/\{([^}]+)\}/)
+        const underscoreMatch = comment.match(/^([A-Z][A-Za-z0-9_]+)/)
+
+        if (bracketMatch) {
+          strategy = bracketMatch[1].trim()
+        } else if (braceMatch) {
+          strategy = braceMatch[1].trim()
+        } else if (underscoreMatch) {
+          strategy = underscoreMatch[1].trim()
+        } else if (comment.length > 0) {
+          // Use comment as-is if no pattern matches (like "RangeBO")
+          strategy = comment
+        }
+      }
+
       const openTime = parseDateTime(timeStr)
       const closeTime = parseDateTime(closeTimeStr)
 
@@ -236,6 +353,8 @@ function parseTrades(data: any[][]): MT5Trade[] {
         swap,
         profit,
         comment,
+        ...(magicNumber !== undefined && !isNaN(magicNumber) && { magicNumber }),
+        ...(strategy && { strategy }),
       }
 
       trades.push(trade)

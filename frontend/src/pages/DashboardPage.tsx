@@ -29,6 +29,7 @@ export function DashboardPage() {
   const [showUpload, setShowUpload] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [selectedMonths, setSelectedMonths] = useState<SelectedMonth[]>([])
+  const [selectedStrategy, setSelectedStrategy] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   // Auto-migrate from localStorage to Supabase
@@ -173,23 +174,52 @@ export function DashboardPage() {
     setSelectedMonths([])
   }
 
-  // Filter trades by selected months
+  const handleClearStrategyFilter = () => {
+    setSelectedStrategy(null)
+  }
+
+  // Extract unique strategies from trades
+  const availableStrategies = useMemo(() => {
+    if (!activeReport) return []
+
+    const trades = activeReport.trades as MT5Trade[]
+    const strategiesSet = new Set<string>()
+
+    trades.forEach(trade => {
+      const strategy = trade.strategy || trade.magicNumber?.toString() || 'Unknown'
+      strategiesSet.add(strategy)
+    })
+
+    return Array.from(strategiesSet).sort()
+  }, [activeReport])
+
+  // Filter trades by selected months AND selected strategy
   const filteredTrades = useMemo(() => {
-    if (!activeReport || selectedMonths.length === 0) {
-      return activeReport?.trades as MT5Trade[] || []
+    if (!activeReport) {
+      return []
     }
 
     const trades = activeReport.trades as MT5Trade[]
+
     return trades.filter(trade => {
-      const year = trade.closeTime.getFullYear()
-      const month = trade.closeTime.getMonth()
-      return selectedMonths.some(sm => sm.year === year && sm.month === month)
+      // Month filter
+      const monthMatch = selectedMonths.length === 0 || selectedMonths.some(sm => {
+        const year = trade.closeTime.getFullYear()
+        const month = trade.closeTime.getMonth()
+        return sm.year === year && sm.month === month
+      })
+
+      // Strategy filter
+      const tradeStrategy = trade.strategy || trade.magicNumber?.toString() || 'Unknown'
+      const strategyMatch = !selectedStrategy || tradeStrategy === selectedStrategy
+
+      return monthMatch && strategyMatch
     })
-  }, [activeReport, selectedMonths])
+  }, [activeReport, selectedMonths, selectedStrategy])
 
   // Recalculate metrics based on filtered trades
   const filteredMetrics = useMemo(() => {
-    if (!activeReport || selectedMonths.length === 0 || filteredTrades.length === 0) {
+    if (!activeReport || (selectedMonths.length === 0 && !selectedStrategy) || filteredTrades.length === 0) {
       return activeReport?.metrics
     }
 
@@ -375,6 +405,81 @@ export function DashboardPage() {
                 </div>
               </div>
             </div>
+
+            {/* Strategy Filter Selector */}
+            {availableStrategies.length > 1 && (
+              <div className="bg-[oklch(14%_0.01_240)] border border-[oklch(25%_0.01_240)] rounded-lg p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <Target className="h-5 w-5 text-emerald-500" />
+                  <h3 className="text-sm font-semibold text-white">Strategy Filter</h3>
+                  <span className="text-xs text-[oklch(65%_0.01_240)]">
+                    {availableStrategies.length} strategies • {activeReport.trades.length} total trades
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {/* All Strategies Button */}
+                  <button
+                    onClick={() => setSelectedStrategy(null)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      !selectedStrategy
+                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                        : 'bg-[oklch(18%_0.01_240)] text-[oklch(65%_0.01_240)] hover:bg-[oklch(22%_0.01_240)] hover:text-white border border-[oklch(30%_0.01_240)]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>All Strategies</span>
+                      <span className={`text-xs ${!selectedStrategy ? 'text-emerald-100' : 'text-[oklch(55%_0.01_240)]'}`}>
+                        {activeReport.trades.length}
+                      </span>
+                    </div>
+                  </button>
+
+                  {/* Individual Strategy Buttons */}
+                  {availableStrategies.map(strategy => {
+                    const trades = activeReport.trades as MT5Trade[]
+                    const strategyTrades = trades.filter(t => {
+                      const tradeStrategy = t.strategy || t.magicNumber?.toString() || 'Unknown'
+                      return tradeStrategy === strategy
+                    })
+                    const strategyCount = strategyTrades.length
+                    const isSelected = selectedStrategy === strategy
+
+                    // Calculate quick stats
+                    const winningTrades = strategyTrades.filter(t => t.profit > 0)
+                    const winRate = strategyCount > 0 ? (winningTrades.length / strategyCount) * 100 : 0
+
+                    return (
+                      <button
+                        key={strategy}
+                        onClick={() => setSelectedStrategy(strategy)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                          isSelected
+                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                            : 'bg-[oklch(18%_0.01_240)] text-[oklch(65%_0.01_240)] hover:bg-[oklch(22%_0.01_240)] hover:text-white border border-[oklch(30%_0.01_240)]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>{strategy}</span>
+                          <div className="flex items-center gap-1">
+                            <span className={`text-xs ${isSelected ? 'text-emerald-100' : 'text-[oklch(55%_0.01_240)]'}`}>
+                              {strategyCount}
+                            </span>
+                            <span className={`text-xs ${
+                              winRate >= 50
+                                ? isSelected ? 'text-emerald-200' : 'text-emerald-400'
+                                : isSelected ? 'text-red-200' : 'text-red-400'
+                            }`}>
+                              • {winRate.toFixed(0)}%
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Month Selection Indicator */}
             {selectedMonths.length > 0 && (
