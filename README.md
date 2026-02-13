@@ -1,102 +1,173 @@
 # Klaro
 
-<div align="center">
-
-**Advanced Analytics Platform for Algorithmic Traders**
-
-A comprehensive analytics solution designed to empower algorithmic traders with actionable insights, real-time monitoring, and performance optimization tools.
+**Live MT5 Analytics Platform for Algorithmic Traders**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-18+-61DAFB)](https://reactjs.org/)
-
-</div>
+[![React](https://img.shields.io/badge/React-19+-61DAFB)](https://reactjs.org/)
+[![Python](https://img.shields.io/badge/Python-3.11+-blue)](https://www.python.org/)
 
 ---
 
-## Overview
+## What is Klaro?
 
-Klaro is an analytics platform built specifically for algorithmic traders who need deep insights into their trading strategies, performance metrics, and market data. Whether you're backtesting strategies or monitoring live trading operations, Klaro provides the tools you need to make data-driven decisions.
+Klaro is a **multi-user SaaS platform** where algorithmic traders connect their MT5 accounts and get real-time analytics, performance tracking, and fund management insights.
 
-## Key Features
+**Connect your MT5 accounts → Auto-sync every 15 minutes → Live dashboard with advanced analytics**
 
-- **Real-time Performance Monitoring** - Track your strategies as they execute
-- **Advanced Analytics Dashboard** - Visualize key metrics and performance indicators
-- **Strategy Backtesting Insights** - Analyze historical performance data
-- **Risk Management Tools** - Monitor exposure and manage portfolio risk
-- **Custom Metrics & KPIs** - Define and track what matters to your trading style
-- **Multi-Strategy Support** - Compare and analyze multiple strategies simultaneously
+---
 
-## Tech Stack
+## Features
 
-### Frontend
-- **React** with TypeScript
-- **Vite** for blazing-fast development
-- **Tailwind CSS** for modern, responsive UI
-- **shadcn/ui** component library
+- 🔌 **Connect Multiple MT5 Accounts** - Link unlimited demo, live, prop, or challenge accounts
+- 📊 **Live Performance Monitoring** - Real-time balance, equity, and position tracking
+- 📈 **Advanced Analytics** - EA performance, symbol breakdowns, time-based analysis
+- 📉 **Trade History Database** - Unlimited historical data retention
+- 🔄 **Auto-Sync** - Data updates every 15 minutes automatically
+- 🎨 **Beautiful Dashboard** - Bloomberg terminal-inspired dark theme
+- 💰 **Multi-Account Aggregation** - View total fund performance across all accounts
 
-### Backend
-- Coming soon
+---
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js 18+
+- Python 3.11+ (for backend)
+- Supabase account
+- MT5 account(s) for testing
+
+### Frontend Setup
+
+```bash
+git clone https://github.com/yourusername/klaro.git
+cd klaro/frontend
+npm install
+npm run dev
+```
+
+### Backend Setup
+
+See **[PROJECT.md](PROJECT.md)** for complete implementation guide.
+
+---
 
 ## Project Structure
 
 ```
 klaro/
-├── frontend/          # React + Vite frontend application
-├── backend/           # Backend services (in development)
-└── README.md
+├── frontend/          # React + Vite + TypeScript
+│   ├── src/
+│   │   ├── components/   # UI components
+│   │   ├── pages/        # Dashboard, analytics, settings
+│   │   ├── utils/        # MT5 parsers, API clients
+│   │   └── types/        # TypeScript definitions
+│   └── package.json
+│
+├── backend/           # Python/FastAPI (coming soon)
+│   ├── app/
+│   │   ├── main.py       # FastAPI routes
+│   │   ├── worker.py     # Celery worker for MT5 sync
+│   │   └── models.py     # Data models
+│   └── requirements.txt
+│
+├── PROJECT.md         # 📘 Complete implementation plan
+└── README.md          # This file
 ```
 
-## Getting Started
+---
 
-### Prerequisites
+## Tech Stack
 
-- Node.js 18+ and npm
-- Git
+**Frontend:**
+- React 19 + TypeScript + Vite
+- Tailwind CSS v4 (OKLCH colors)
+- shadcn/ui components
+- Recharts visualizations
 
-### Installation
+**Backend:**
+- Python 3.11 + FastAPI
+- Celery (task queue)
+- Redis (message broker)
+- MetaTrader5 library (MT5 API)
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/klaro.git
-cd klaro
+**Infrastructure:**
+- Supabase (PostgreSQL + auth)
+- Ubuntu VPS (API server)
+- Windows Server (MT5 workers)
+- Stripe (payments)
 
-# Install frontend dependencies
-cd frontend
-npm install
-
-# Start the development server
-npm run dev
-```
+---
 
 ## Development Status
 
-🚧 **This project is currently in active development.**
+🚧 **Currently pivoting from file-upload tool to live SaaS platform**
 
-Klaro is being built iteratively with a focus on:
-- Clean, maintainable architecture
-- Modern development practices
-- Scalable infrastructure
-- User-centric design
+**Completed:**
+- ✅ File upload analytics (XLSX parser)
+- ✅ Dashboard UI with charts
+- ✅ Supabase authentication
+- ✅ Type-safe data models
 
-## Roadmap
+**In Progress:**
+- 🔄 Backend MT5 sync infrastructure
+- 🔄 Multi-account support
+- 🔄 Stripe payment integration
 
-- [ ] Core analytics dashboard
-- [ ] Strategy performance tracking
-- [ ] Real-time data integration
-- [ ] Backtesting analysis tools
-- [ ] Portfolio risk metrics
-- [ ] Custom alert system
-- [ ] API for strategy integration
-- [ ] Multi-exchange support
+**Roadmap:**
+- Week 1-2: Backend setup (workers, API)
+- Week 3: Frontend adaptation
+- Week 4: Integration & testing
+- Week 5-6: Beta launch
+- Week 7: Payment integration
+- Week 8: Public launch
+
+See **[PROJECT.md](PROJECT.md)** for detailed roadmap.
+
+---
+
+## Documentation
+
+- **[PROJECT.md](PROJECT.md)** - Complete project documentation
+  - Architecture overview
+  - Database schema
+  - Implementation roadmap (8-week plan)
+  - Scaling strategy
+  - Cost analysis & projections
+  - Security considerations
+
+- **[frontend/CLAUDE.md](frontend/CLAUDE.md)** - Frontend architecture guide
+
+---
+
+## Business Model
+
+**Free Tier:**
+- 1 MT5 account
+- 30 days history
+
+**Pro - $15/month:**
+- Unlimited MT5 accounts
+- Unlimited history
+- Advanced analytics
+- Priority support
+
+**Target:** $10k MRR in 12 months
+
+---
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit issues and pull requests.
+This is currently a solo project, but contributions are welcome once we launch!
+
+---
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License - See LICENSE file for details
+
+---
 
 ## Disclaimer
 
@@ -104,8 +175,4 @@ This software is for informational and educational purposes only. It does not co
 
 ---
 
-<div align="center">
-
-**Built with ❤️ for the algorithmic trading community**
-
-</div>
+**Built with ❤️ for algorithmic traders**
