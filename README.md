@@ -1,55 +1,38 @@
 # Klaro
 
-**Live MT5 Analytics Platform for Algorithmic Traders**
+**Build Your Own Quantfund in Python — a course for algorithmic traders.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19+-61DAFB)](https://reactjs.org/)
-[![Python](https://img.shields.io/badge/Python-3.11+-blue)](https://www.python.org/)
 
 ---
 
 ## What is Klaro?
 
-Klaro is a **multi-user SaaS platform** where algorithmic traders connect their MT5 accounts and get real-time analytics, performance tracking, and fund management insights.
+Klaro is a course site that teaches traders to build a systematic FX fund in
+Python, targeting MetaTrader 5. Lessons are written in MDX and walk through the
+whole stack — data, backtesting, strategy, risk, execution, and automation —
+ending in a working fund dashboard.
 
-**Connect your MT5 accounts → Auto-sync every 15 minutes → Live dashboard with advanced analytics**
-
----
-
-## Features
-
-- 🔌 **Connect Multiple MT5 Accounts** - Link unlimited demo, live, prop, or challenge accounts
-- 📊 **Live Performance Monitoring** - Real-time balance, equity, and position tracking
-- 📈 **Advanced Analytics** - EA performance, symbol breakdowns, time-based analysis
-- 📉 **Trade History Database** - Unlimited historical data retention
-- 🔄 **Auto-Sync** - Data updates every 15 minutes automatically
-- 🎨 **Beautiful Dashboard** - Bloomberg terminal-inspired dark theme
-- 💰 **Multi-Account Aggregation** - View total fund performance across all accounts
+The site itself is a React SPA; lessons live as MDX files in the repo (no CMS).
 
 ---
 
 ## Quick Start
 
-### Prerequisites
-
-- Node.js 18+
-- Python 3.11+ (for backend)
-- Supabase account
-- MT5 account(s) for testing
-
-### Frontend Setup
-
 ```bash
-git clone https://github.com/yourusername/klaro.git
-cd klaro/frontend
+cd frontend
 npm install
-npm run dev
+npm run dev        # http://localhost:5173
 ```
 
-### Backend Setup
+```bash
+npm run typecheck  # tsc --noEmit
+npm run build      # production build -> dist/
+npm run lint
+```
 
-See **[PROJECT.md](PROJECT.md)** for complete implementation guide.
+No environment variables are required to run the site.
 
 ---
 
@@ -57,122 +40,62 @@ See **[PROJECT.md](PROJECT.md)** for complete implementation guide.
 
 ```
 klaro/
-├── frontend/          # React + Vite + TypeScript
-│   ├── src/
-│   │   ├── components/   # UI components
-│   │   ├── pages/        # Dashboard, analytics, settings
-│   │   ├── utils/        # MT5 parsers, API clients
-│   │   └── types/        # TypeScript definitions
-│   └── package.json
-│
-├── backend/           # Python/FastAPI (coming soon)
-│   ├── app/
-│   │   ├── main.py       # FastAPI routes
-│   │   ├── worker.py     # Celery worker for MT5 sync
-│   │   └── models.py     # Data models
-│   └── requirements.txt
-│
-├── PROJECT.md         # 📘 Complete implementation plan
-└── README.md          # This file
+├── frontend/
+│   └── src/
+│       ├── pages/            # LandingPage, CoursePage, LessonPage
+│       ├── content/
+│       │   ├── course.ts     # builds the module/lesson tree from the file layout
+│       │   └── modules/      # lessons as MDX (NN-module/NN-lesson.mdx)
+│       ├── components/ui/    # button, card
+│       ├── lib/utils.ts
+│       └── index.css         # Tailwind v4 theme (OKLCH dark)
+├── REBRAND.md                # the course plan (current)
+└── README.md
 ```
+
+### Adding a lesson
+
+Drop an `.mdx` file into a numbered module folder with frontmatter — it appears
+in the course automatically:
+
+```mdx
+---
+title: Pulling OHLCV from MT5
+free: false
+order: 1
+---
+
+# ...lesson content...
+```
+
+Folder `NN-slug` sets module order/title; file `NN-slug` sets lesson order.
 
 ---
 
 ## Tech Stack
 
-**Frontend:**
 - React 19 + TypeScript + Vite
-- Tailwind CSS v4 (OKLCH colors)
-- shadcn/ui components
-- Recharts visualizations
-
-**Backend:**
-- Python 3.11 + FastAPI
-- Celery (task queue)
-- Redis (message broker)
-- MetaTrader5 library (MT5 API)
-
-**Infrastructure:**
-- Supabase (PostgreSQL + auth)
-- Ubuntu VPS (API server)
-- Windows Server (MT5 workers)
-- Stripe (payments)
+- Tailwind CSS v4 (OKLCH dark theme)
+- MDX (`@mdx-js/rollup`) for lessons
+- React Router
 
 ---
 
-## Development Status
+## Status
 
-🚧 **Currently pivoting from file-upload tool to live SaaS platform**
-
-**Completed:**
-- ✅ File upload analytics (XLSX parser)
-- ✅ Dashboard UI with charts
-- ✅ Supabase authentication
-- ✅ Type-safe data models
-
-**In Progress:**
-- 🔄 Backend MT5 sync infrastructure
-- 🔄 Multi-account support
-- 🔄 Stripe payment integration
-
-**Roadmap:**
-- Week 1-2: Backend setup (workers, API)
-- Week 3: Frontend adaptation
-- Week 4: Integration & testing
-- Week 5-6: Beta launch
-- Week 7: Payment integration
-- Week 8: Public launch
-
-See **[PROJECT.md](PROJECT.md)** for detailed roadmap.
-
----
-
-## Documentation
-
-- **[PROJECT.md](PROJECT.md)** - Complete project documentation
-  - Architecture overview
-  - Database schema
-  - Implementation roadmap (8-week plan)
-  - Scaling strategy
-  - Cost analysis & projections
-  - Security considerations
-
-- **[frontend/CLAUDE.md](frontend/CLAUDE.md)** - Frontend architecture guide
-
----
-
-## Business Model
-
-**Free Tier:**
-- 1 MT5 account
-- 30 days history
-
-**Pro - $15/month:**
-- Unlimited MT5 accounts
-- Unlimited history
-- Advanced analytics
-- Priority support
-
-**Target:** $10k MRR in 12 months
-
----
-
-## Contributing
-
-This is currently a solo project, but contributions are welcome once we launch!
+Early build. The content pipeline, landing page, and course/lesson pages are in
+place with a free intro module. Payment gating (one-time purchase), progress
+tracking, and a Discord community are planned — see **[REBRAND.md](REBRAND.md)**.
 
 ---
 
 ## License
 
-MIT License - See LICENSE file for details
+MIT — see LICENSE.
 
 ---
 
 ## Disclaimer
 
-This software is for informational and educational purposes only. It does not constitute financial advice. Trading involves substantial risk and is not suitable for every investor. Past performance is not indicative of future results.
-
----
-
-**Built with ❤️ for algorithmic traders**
+Educational content only. Not financial advice. Trading involves substantial
+risk; past performance is not indicative of future results.
