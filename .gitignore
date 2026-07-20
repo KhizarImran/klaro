@@ -95,3 +95,5 @@ Thumbs.db
 # Misc
 *.tsbuildinfo
 .eslintcache
+
+.claude/settings.local.json
