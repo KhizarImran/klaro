@@ -2,5 +2,10 @@
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "shadcn"
-  ]
+  ],
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:edgeskool.net)"
+    ]
+  }
 }
