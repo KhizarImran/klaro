@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Lock, PlayCircle } from 'lucide-react'
 import { modules } from '@/content/course'
+import { Logo } from '@/components/Logo'
 
 export function CoursePage() {
   return (
@@ -8,7 +9,7 @@ export function CoursePage() {
       <nav className="border-b border-border">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between px-6 py-4">
           <Link to="/" className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded bg-primary font-mono text-sm font-bold text-primary-foreground">K</span>
+            <Logo className="h-8 w-8" />
             <span className="font-mono text-sm text-muted-foreground">/ course</span>
           </Link>
           <Link to="/" className="font-mono text-sm text-muted-foreground hover:text-foreground">← Home</Link>

@@ -1,6 +1,7 @@
 import { useParams, Link, Navigate } from 'react-router-dom'
 import { Lock, ArrowLeft, ArrowRight } from 'lucide-react'
 import { modules, findLesson, lessonNeighbors } from '@/content/course'
+import { Logo } from '@/components/Logo'
 
 export function LessonPage() {
   const { moduleSlug, lessonSlug } = useParams()
@@ -18,7 +19,7 @@ export function LessonPage() {
         <aside className="hidden w-64 shrink-0 lg:block">
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded bg-primary font-mono text-xs font-bold text-primary-foreground">K</span>
+              <Logo className="h-7 w-7" />
             </Link>
             <Link to="/course" className="font-mono text-sm text-muted-foreground hover:text-foreground">
               ← All modules

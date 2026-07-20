@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Code2, LineChart, LayoutDashboard, Check, ArrowRight, MessagesSquare, Play } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { modules } from '@/content/course'
+import { Logo } from '@/components/Logo'
 
 // Full planned syllabus (marketing copy). Live modules are backed by files in course.ts.
 const SYLLABUS = [
@@ -28,7 +29,7 @@ export function LandingPage() {
         <div className="mx-auto max-w-[1400px] px-6 py-4">
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded bg-primary font-mono text-sm font-bold text-primary-foreground">K</span>
+              <Logo className="h-8 w-8" />
             </Link>
             <div className="hidden md:flex items-center gap-8 font-mono text-sm">
               <a href="#curriculum" className="text-muted-foreground hover:text-foreground transition-colors">Curriculum</a>
@@ -288,7 +289,7 @@ export function LandingPage() {
         <div className="container mx-auto max-w-6xl">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded bg-primary font-mono text-xs font-bold text-primary-foreground">K</span>
+              <Logo className="h-7 w-7" />
               <span className="text-lg font-bold">Klaro</span>
             </div>
             <div className="flex space-x-6">
