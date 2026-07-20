@@ -10,19 +10,19 @@
   --color-card-foreground: oklch(98% 0 0);
   --color-popover: oklch(14% 0.01 240);
   --color-popover-foreground: oklch(98% 0 0);
-  --color-primary: oklch(65% 0.22 160);
-  --color-primary-foreground: oklch(10% 0.01 240);
+  --color-primary: oklch(62% 0.19 255);
+  --color-primary-foreground: oklch(98% 0 0);
   --color-secondary: oklch(20% 0.01 240);
   --color-secondary-foreground: oklch(98% 0 0);
   --color-muted: oklch(20% 0.01 240);
   --color-muted-foreground: oklch(65% 0.01 240);
-  --color-accent: oklch(65% 0.22 160);
-  --color-accent-foreground: oklch(10% 0.01 240);
+  --color-accent: oklch(62% 0.19 255);
+  --color-accent-foreground: oklch(98% 0 0);
   --color-destructive: oklch(55% 0.22 25);
   --color-destructive-foreground: oklch(98% 0 0);
   --color-border: oklch(25% 0.01 240);
   --color-input: oklch(25% 0.01 240);
-  --color-ring: oklch(65% 0.22 160);
+  --color-ring: oklch(62% 0.19 255);
 
   --radius: 0.5rem;
 }
@@ -36,6 +36,57 @@ body {
   color: var(--color-foreground);
   font-family: var(--font-family);
 }
+
+/* Diagonal hatch divider (edgeskool-style) */
+.hatch {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 7px,
+    var(--color-border) 7px,
+    var(--color-border) 8px
+  );
+}
+
+/* Lesson (MDX) prose */
+.lesson {
+  max-width: 46rem;
+  line-height: 1.7;
+  color: var(--color-foreground);
+}
+.lesson h1 { font-size: 2rem; font-weight: 700; margin: 0 0 1rem; }
+.lesson h2 { font-size: 1.4rem; font-weight: 600; margin: 2.2rem 0 0.8rem; }
+.lesson h3 { font-size: 1.1rem; font-weight: 600; margin: 1.8rem 0 0.6rem; }
+.lesson p, .lesson ul, .lesson ol { margin: 0 0 1rem; }
+.lesson ul, .lesson ol { padding-left: 1.4rem; }
+.lesson li { margin: 0.3rem 0; }
+.lesson a { color: var(--color-primary); text-decoration: underline; }
+.lesson strong { color: var(--color-foreground); font-weight: 600; }
+.lesson code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+  background: var(--color-secondary);
+  padding: 0.15em 0.4em;
+  border-radius: 0.3rem;
+}
+.lesson pre {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 0 0 1.2rem;
+}
+.lesson pre code { background: none; padding: 0; font-size: 0.85rem; }
+.lesson blockquote {
+  border-left: 3px solid var(--color-primary);
+  padding-left: 1rem;
+  margin: 0 0 1.2rem;
+  color: var(--color-muted-foreground);
+}
+.lesson table { width: 100%; border-collapse: collapse; margin: 0 0 1.2rem; font-size: 0.9rem; }
+.lesson th, .lesson td { border: 1px solid var(--color-border); padding: 0.5rem 0.75rem; text-align: left; }
+.lesson th { background: var(--color-secondary); font-weight: 600; }
 
 /* Ticker Animation */
 @keyframes ticker-scroll {

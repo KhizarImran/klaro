@@ -1,0 +1,53 @@
+---
+title: MT5 + Python Setup
+free: true
+order: 2
+---
+
+# MT5 + Python Setup
+
+Let's get Python talking to a MetaTrader 5 terminal and pull your first account
+snapshot. This is the foundation everything else sits on.
+
+## Prerequisites
+
+- A **MetaTrader 5 terminal** installed (Windows, or Wine on Linux/Mac).
+- A **demo account** with any broker — free, and all we need for the whole course.
+- **Python 3.11+**.
+
+## Install the package
+
+```bash
+pip install MetaTrader5 pandas
+```
+
+> The `MetaTrader5` package only ships wheels for Windows. On Mac/Linux you run the
+> terminal (and this code) under Wine, or on a cheap Windows VPS. We cover that
+> properly in the Automation module.
+
+## Connect and read the account
+
+```python
+import MetaTrader5 as mt5
+
+# Point at your terminal + demo login
+if not mt5.initialize(login=YOUR_LOGIN, password="YOUR_PASSWORD", server="YOUR_SERVER"):
+    raise RuntimeError(f"initialize() failed: {mt5.last_error()}")
+
+info = mt5.account_info()
+print(f"Balance: {info.balance} {info.currency}")
+print(f"Equity:  {info.equity}")
+
+mt5.shutdown()
+```
+
+If you see your demo balance printed, you're connected. That's the whole game — every
+later module is just doing more with this same connection.
+
+## What just happened
+
+- `initialize()` launches / attaches to the terminal and logs in.
+- `account_info()` returns a named tuple of live account state.
+- `shutdown()` cleanly closes the connection — always pair it with `initialize()`.
+
+Next module: pulling price data you can actually build a strategy on.

@@ -1,0 +1,49 @@
+---
+title: What Is a Quantfund?
+free: true
+order: 1
+---
+
+# What Is a Quantfund?
+
+A **quantitative fund** ("quantfund") trades systematically. Instead of a human
+deciding each entry by feel, a set of rules — expressed as code — decides what to
+buy, when, and how much. Your job as the builder is to turn a market *edge* into
+software that runs without you.
+
+By the end of this course you'll have built exactly that, in Python, trading FX
+through MetaTrader 5.
+
+## The four jobs of a quantfund
+
+Every systematic strategy, no matter how fancy, does four things:
+
+1. **Get data** — prices, in a clean, trustworthy form.
+2. **Generate signals** — decide long / short / flat from that data.
+3. **Size and manage risk** — decide *how much* and cap the downside.
+4. **Execute** — place and manage real orders at the broker.
+
+Wrap those in something that runs 24/5 and reports its results, and you have a fund.
+
+## Why MT5 + FX
+
+- **MT5** exposes a first-class Python API (`MetaTrader5`) — data, orders, account
+  state, all from Python.
+- **FX** runs nearly 24 hours, has deep liquidity, and demo accounts are free — so
+  you can build and test the whole pipeline at zero risk before a cent is live.
+
+## What you'll build
+
+The capstone is a working fund dashboard — the same MT5 report parser, metrics, and
+equity charts this site is built on. You'll assemble it piece by piece:
+
+| Module | You'll build |
+|--------|--------------|
+| Data | A clean OHLCV loader from MT5 |
+| Backtesting | A backtester that won't lie to you |
+| Strategy | A real FX strategy, end to end |
+| Risk | Position sizing that survives drawdowns |
+| Execution | Live order placement via MT5 |
+| Automation | The whole thing running on its own |
+
+Next up: getting Python talking to MT5.
