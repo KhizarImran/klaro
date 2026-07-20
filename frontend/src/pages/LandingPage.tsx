@@ -32,7 +32,6 @@ export function LandingPage() {
             </Link>
             <div className="hidden md:flex items-center gap-8 font-mono text-sm">
               <a href="#curriculum" className="text-muted-foreground hover:text-foreground transition-colors">Curriculum</a>
-              <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
               <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
               <a href="#faq" className="text-muted-foreground hover:text-foreground transition-colors">FAQs</a>
             </div>
